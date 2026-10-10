@@ -1,0 +1,15 @@
+services:
+  lich-am:
+    build: .
+    image: lich-am:1.0
+    container_name: lich-am
+    ports:
+      - "8080:80"        # đổi 8080 nếu cổng này đã bị dùng
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    mem_limit: 64m
+    cpus: 0.25
