@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="vi"><link rel="icon" type="image/png" href="favicon.png"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lịch Âm và Xem Tuổi</title>
+<title>Phong Thủy Lạc Việt</title>
 <style>
 :root{--bg:#f2f2f0;--card:#fff;--ink:#241b1b;--mute:#6b6060;--line:#ddd6d3;--red:#b3202f;--gold:#9a6b00;--good:#1b7a3d;--goodbg:#dff2e5;--bad:#a3162a;--badbg:#f8dfe2;--mid:#8a7a5a;--sel:#fff3d1}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171313;--card:#221c1c;--ink:#f1e9e7;--mute:#a89b98;--line:#3a3030;--red:#ff7b87;--gold:#e0b04a;--good:#58d08a;--goodbg:#173a25;--bad:#ff8592;--badbg:#44181e;--mid:#c9b88a;--sel:#4a3a12}}
@@ -9,7 +9,8 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:400 17px/1.5 system-ui,"Segoe UI",Roboto,Arial,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
-main{max-width:980px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1.25fr 1fr;gap:16px}
+main{max-width:980px;margin:0 auto;padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+[hidden]{display:none!important}
 h1{grid-column:1/-1;margin:0;font-size:26px;color:var(--red);display:flex;align-items:center;gap:12px}
 h1 img{width:44px;height:44px;border-radius:10px;flex:none}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
@@ -52,11 +53,63 @@ input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .ok{color:var(--good)}.no{color:var(--bad);font-weight:600}
 .tw{overflow-x:auto;margin-top:10px}table{border-collapse:collapse;width:100%;font-size:15px}
 th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap}th{color:var(--mute);font-weight:600}
-@media(max-width:760px){main{grid-template-columns:1fr}.c{min-height:54px}.c b{font-size:18px}}
+input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;width:220px}
+.tabs{display:flex;gap:8px;margin:8px 0}.tabs .on{background:var(--red);color:#fff;border-color:var(--red)}
+.hd{font-size:22px;font-weight:700;color:var(--red);margin:8px 0 2px}
+.bn{background:var(--sel);border:1px solid var(--gold);border-radius:12px;padding:10px 14px}.bn div{margin:2px 0}.bn button{padding:2px 10px;margin-left:8px}
+.nl{list-style:none;margin:10px 0 0;padding:0}.nl li{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:8px 0}.nl small{color:var(--mute)}.nl button{padding:4px 12px;color:var(--bad)}
+.nav{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:58px;padding:10px 6px;font-size:15px;font-weight:700;line-height:1.2;text-align:center}
+.nav button small{font-weight:400;font-size:12px;color:var(--mute)}
+.nav .on{background:var(--red);color:var(--card);border-color:var(--red)}.nav .on small{color:inherit;opacity:.9}
+.cal{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}.cal>*{min-width:0}
+.ph{margin:0 0 10px;font-size:20px;color:var(--red)}
+@media(max-width:760px){.cal{grid-template-columns:1fr}.c{min-height:54px}.c b{font-size:18px}.nav{gap:6px}.nav button{min-height:52px;padding:6px 3px;font-size:12px}.nav button small{display:none}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body><main>
-<h1><img src="favicon.png" alt="" width="44" height="44">Lịch Âm và Xem Tuổi</h1>
+<h1><img src="favicon.png" alt="" width="44" height="44">Phong Thủy Lạc Việt</h1>
+<div id="bn" class="bn t" role="status" hidden></div>
+<nav class="nav" role="tablist" aria-label="Các mục chính">
+<button role="tab" id="nv1" class="on" data-p="pn1" aria-controls="pn1" aria-selected="true">SỔ TAY ĐIỆN TỬ<small>Ngày quan trọng + giờ/ngày</small></button>
+<button role="tab" id="nv2" data-p="pn2" aria-controls="pn2" aria-selected="false" tabindex="-1">LỊCH ÂM DƯƠNG<small>Tra ngày tốt xấu</small></button>
+<button role="tab" id="nv3" data-p="pn3" aria-controls="pn3" aria-selected="false" tabindex="-1">XEM TUỔI HỢP<small>Cưới gả + sinh con</small></button>
+<button role="tab" id="nv4" data-p="pn4" aria-controls="pn4" aria-selected="false" tabindex="-1">XEM TUỔI TỪNG NGƯỜI<small>Năm tốt hay xấu</small></button>
+</nav>
+<div id="pn1" role="tabpanel" aria-labelledby="nv1">
+<section class="card t" id="nn">
+ <h2>SỔ TAY ĐIỆN TỬ</h2>
+ <div class="tabs"><button class="on" data-t="d">Ngày quan trọng</button><button data-t="g">Nhắc Giờ/Ngày</button><button id="nbell" style="margin-left:auto">Bật thông báo</button></div>
+ <div id="ne" class="no" role="alert"></div>
+ <div id="ntab1">
+  <div class="note" style="margin:0">Ghi lại giỗ, sinh nhật, kỷ niệm. Bỏ trống năm để nhắc hằng năm. Ghi chú lưu trên trình duyệt này; thông báo chỉ hiện khi bạn mở trang.</div>
+  <div class="frm">
+   <label>Tên<input type="text" id="nt" maxlength="60" placeholder="Giỗ ông nội"></label>
+   <label>Loại lịch<select id="nc"><option value="l">Âm lịch</option><option value="s">Dương lịch</option></select></label>
+   <label>Ngày<input type="number" id="nd" min="1" max="31" inputmode="numeric"></label>
+   <label>Tháng<input type="number" id="nm" min="1" max="12" inputmode="numeric"></label>
+   <label>Năm (tùy chọn)<input type="number" id="ny" min="1900" max="2150" inputmode="numeric"></label>
+   <label>Nhắc trước<select id="na"><option value="0">Đúng ngày</option><option value="1">1 ngày</option><option value="3" selected>3 ngày</option><option value="7">7 ngày</option></select></label>
+   <button class="pri" id="nadd">Lưu ngày</button>
+  </div>
+  <ul class="nl" id="nl"></ul>
+ </div>
+ <div id="ntab2" hidden>
+  <div class="note" style="margin:0">Hẹn giờ nhắc việc theo ngày và giờ, một lần hoặc lặp lại. Chuông và thông báo chỉ hoạt động khi trang đang mở.</div>
+  <div class="frm">
+   <label>Việc cần nhắc<input type="text" id="gt" maxlength="60" placeholder="Họp nhóm, đóng tiền điện"></label>
+   <label>Ngày<input type="date" id="gd"></label>
+   <label>Giờ<input type="time" id="gh"></label>
+   <label>Lặp lại<select id="gr"><option value="o">Một lần</option><option value="d">Hằng ngày</option><option value="w">Hằng tuần</option><option value="m">Hằng tháng</option></select></label>
+   <label>Nhắc trước<select id="ga"><option value="0">Đúng giờ</option><option value="5">5 phút</option><option value="15">15 phút</option><option value="30">30 phút</option><option value="60">1 giờ</option></select></label>
+   <button class="pri" id="gadd">Lưu nhắc</button>
+  </div>
+  <ul class="nl" id="gl"></ul>
+ </div>
+</section>
+</div>
+<div id="pn2" class="cal" role="tabpanel" aria-labelledby="nv2" hidden>
 <section class="card">
+ <h2 class="ph">LỊCH ÂM DƯƠNG</h2>
  <div class="bar">
   <button id="pv" aria-label="Tháng trước">&lsaquo; Trước</button>
   <select id="sm" aria-label="Tháng"></select><select id="sy" aria-label="Năm"></select>
@@ -66,8 +119,35 @@ th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-
  <div class="leg"><span class="g">Ngày tốt</span><span class="b">Ngày xấu</span><span>Bình thường</span><span class="h">Ngày lễ</span></div>
 </section>
 <section class="card" id="d" aria-live="polite"></section>
+</div>
+<div id="pn3" role="tabpanel" aria-labelledby="nv3" hidden>
+<section class="card t" id="hop">
+ <h2>XEM TUỔI HỢP: cưới gả và sinh con</h2>
+ <div class="tabs"><button class="on" data-t="c">Cưới gả</button><button data-t="s">Sinh con</button></div>
+ <div id="hc">
+  <div class="note" style="margin:0">Nhập năm sinh của hai người. Nhập thêm năm dự định cưới để xét Kim Lâu và Tam Tai.</div>
+  <div class="frm">
+   <label>Năm sinh chồng<input type="number" id="hm" min="1900" max="2150" placeholder="1990" inputmode="numeric"></label>
+   <label>Năm sinh vợ<input type="number" id="hf" min="1900" max="2150" placeholder="1992" inputmode="numeric"></label>
+   <label>Năm cưới (tùy chọn)<input type="number" id="hw" min="1900" max="2200" inputmode="numeric"></label>
+   <button class="pri" id="hxc">Xem hợp tuổi</button>
+  </div><div id="hco" aria-live="polite"></div>
+ </div>
+ <div id="hs" hidden>
+  <div class="note" style="margin:0">Nhập năm sinh của bố, mẹ và năm dự định sinh con.</div>
+  <div class="frm">
+   <label>Năm sinh bố<input type="number" id="hb" min="1900" max="2150" placeholder="1990" inputmode="numeric"></label>
+   <label>Năm sinh mẹ<input type="number" id="hme" min="1900" max="2150" placeholder="1992" inputmode="numeric"></label>
+   <label>Năm sinh con (dự định)<input type="number" id="hc2" min="1900" max="2200" inputmode="numeric"></label>
+   <button class="pri" id="hxs">Xem hợp tuổi</button>
+  </div><div id="hso" aria-live="polite"></div>
+ </div>
+</section>
+
+</div>
+<div id="pn4" role="tabpanel" aria-labelledby="nv4" hidden>
 <section class="card t" id="tuoi">
- <h2>Xem tuổi: năm tốt hay xấu</h2>
+ <h2>XEM TUỔI TỪNG NGƯỜI</h2>
  <div class="note" style="margin:0">Nhập năm sinh (dương lịch) và năm muốn xem, ví dụ để làm nhà, cưới hỏi, làm ăn.</div>
  <div class="frm">
   <label>Năm sinh<input type="number" id="by" min="1900" max="2150" placeholder="1990" inputmode="numeric"></label>
@@ -76,6 +156,8 @@ th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-
  </div>
  <div id="tout" aria-live="polite"></div>
 </section>
+</div>
+
 <script>
 const $=id=>document.getElementById(id),INT=Math.floor,TZ=7;
 function jdFromDate(d,m,y){let a=INT((14-m)/12),yy=y+4800-a,mm=m+12*a-3;let j=d+INT((153*mm+2)/5)+365*yy+INT(yy/4)-INT(yy/100)+INT(yy/400)-32045;if(j<2299161)j=d+INT((153*mm+2)/5)+365*yy+INT(yy/4)-32083;return j}
@@ -164,4 +246,100 @@ $("ty").value=solar2lunar(now.getDate(),M,Y)[2];try{$("by").value=localStorage.g
 $("xem").onclick=tuoi;[$("by"),$("ty")].forEach(e=>e.onkeydown=k=>{if(k.key==="Enter")tuoi()});
 if($("by").value)tuoi();
 render();
+(function(){
+const pad=n=>String(n).padStart(2,"0"),fm=t=>pad(t.getDate())+"/"+pad(t.getMonth()+1)+"/"+t.getFullYear(),
+esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])),
+hanh=y=>napAm(y).split(" ").pop(),cn=y=>(y+6)%10,ch=y=>(y+8)%12,
+has=(ps,a,b)=>ps.some(p=>p[0]==a&&p[1]==b||p[0]==b&&p[1]==a),
+L6=[[0,1],[2,11],[3,10],[4,9],[5,8],[6,7]],T3=[[8,0,4],[11,3,7],[2,6,10],[5,9,1]],HAI=[[0,7],[1,6],[2,5],[3,4],[8,11],[9,10]],
+CUNG={1:"Khảm",2:"Khôn",3:"Chấn",4:"Tốn",6:"Càn",7:"Đoài",8:"Cấn",9:"Ly"},DONG=[1,9,3,4];
+const rChi=(a,b)=>a==b?[0,"Cùng tuổi"]:has(L6,a,b)?[15,"Lục hợp (tốt)"]:T3.some(x=>x.includes(a)&&x.includes(b))?[15,"Tam hợp (tốt)"]:(a-b+12)%12==6?[-15,"Lục xung (xấu)"]:has(HAI,a,b)?[-10,"Lục hại (không tốt)"]:[0,"Bình thường"],
+rCan=(a,b)=>{const d=Math.abs(a-b);return d==5?[8,"Thiên can hợp (tốt)"]:d==6?[-8,"Thiên can xung (xấu)"]:[0,"Bình thường"]},
+rHanh=(a,b)=>a==b?[5,"Bình hòa"]:SINH[a]==b||SINH[b]==a?[10,"Tương sinh (tốt)"]:[-10,"Tương khắc (xấu)"],
+kl=(by,ty)=>[1,3,6,8].includes((ty-by+1)%9),tt=(by,ty)=>TTY[ch(by)%4].includes(ch(ty));
+function cung(y,nam){let s=y;while(s>9)s=String(s).split("").reduce((t,d)=>t+ +d,0);let r=y<2000?(nam?11-s:s+4):(nam?9-s:s+6);while(r>9)r-=9;while(r<1)r+=9;return r==5?(nam?2:8):r}
+function bld(){const it=[];let sc=50;return{add(l,r){sc+=r[0];it.push([l,r[1],r[0]])},done(head){return{sc:Math.max(0,Math.min(100,sc)),it,head}}}}
+const pen=(b,l,bad,pt,txt)=>b.add(l,bad?[pt,txt]:[0,"Không phạm"]);
+function cuoi(m,f,w){const b=bld();
+ b.add("Địa chi "+CHI[ch(m)]+" – "+CHI[ch(f)],rChi(ch(m),ch(f)));
+ b.add("Thiên can "+CAN[cn(m)]+" – "+CAN[cn(f)],rCan(cn(m),cn(f)));
+ b.add("Ngũ hành "+hanh(m)+" – "+hanh(f),rHanh(hanh(m),hanh(f)));
+ const a=cung(m,1),c=cung(f,0),same=DONG.includes(a)==DONG.includes(c);
+ b.add("Cung phi "+CUNG[a]+" – "+CUNG[c],same?[10,"Cùng nhóm "+(DONG.includes(a)?"Đông":"Tây")+" tứ mệnh (tốt)"]:[-10,"Khác nhóm Đông/Tây tứ mệnh (xấu)"]);
+ if(w){pen(b,"Kim Lâu của vợ năm "+w,kl(f,w),-10,"Phạm Kim Lâu (xấu)");pen(b,"Kim Lâu của chồng năm "+w,kl(m,w),-5,"Phạm Kim Lâu (nên cân nhắc)");
+  pen(b,"Tam Tai của chồng năm "+w,tt(m,w),-5,"Phạm Tam Tai");pen(b,"Tam Tai của vợ năm "+w,tt(f,w),-5,"Phạm Tam Tai")}
+ return b.done("Chồng "+cc(cn(m),ch(m))+" ("+hanh(m)+") • Vợ "+cc(cn(f),ch(f))+" ("+hanh(f)+")")}
+function sinhCon(p,q,k){const b=bld();
+ [["bố",p],["mẹ",q]].forEach(([t,y])=>{b.add("Địa chi con – "+t,rChi(ch(y),ch(k)));b.add("Ngũ hành con – "+t,rHanh(hanh(y),hanh(k)))});
+ pen(b,"Kim Lâu của mẹ năm "+k,kl(q,k),-10,"Phạm Kim Lâu (xấu)");pen(b,"Tam Tai của bố năm "+k,tt(p,k),-5,"Phạm Tam Tai");pen(b,"Tam Tai của mẹ năm "+k,tt(q,k),-5,"Phạm Tam Tai");
+ return b.done("Bố "+cc(cn(p),ch(p))+" ("+hanh(p)+") • Mẹ "+cc(cn(q),ch(q))+" ("+hanh(q)+") • Con "+cc(cn(k),ch(k))+" ("+hanh(k)+")")}
+function show(o,r){const v=r.sc>=75?["tot","Rất hợp"]:r.sc>=60?["tot","Hợp"]:r.sc>=45?["tb","Bình thường"]:["xau","Nên cân nhắc"];
+ o.innerHTML=`<div class="hd">${r.head}</div><div class="badge ${v[0]}">${r.sc}/100: ${v[1]}</div><dl>${r.it.map(i=>`<dt>${i[0]}</dt><dd class="${i[2]>0?"ok":i[2]<0?"no":""}">${i[1]}${i[2]?" ("+(i[2]>0?"+":"")+i[2]+")":""}</dd>`).join("")}</dl><div class="note">Chỉ mang tính tham khảo theo quan niệm dân gian. Nhập năm sinh dương lịch; nếu sinh trước Tết thì nhập năm trước đó. Điểm cao không bảo đảm hạnh phúc, điểm thấp không có nghĩa là không thể.</div>`}
+const ok=v=>v>=1900&&v<=2200,bad=o=>{o.innerHTML='<p class="note">Vui lòng nhập đủ các năm hợp lệ (1900–2200).</p>'};
+document.querySelectorAll("#hop .tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#hop .tabs button").forEach(x=>x.classList.toggle("on",x==b));$("hc").hidden=b.dataset.t!="c";$("hs").hidden=b.dataset.t!="s"});
+$("hxc").onclick=()=>{const m=+$("hm").value,f=+$("hf").value,w=+$("hw").value,o=$("hco");if(!ok(m)||!ok(f)||(w&&!ok(w)))return bad(o);show(o,cuoi(m,f,w||0))};
+$("hxs").onclick=()=>{const p=+$("hb").value,q=+$("hme").value,k=+$("hc2").value,o=$("hso");if(!ok(p)||!ok(q)||!ok(k))return bad(o);show(o,sinhCon(p,q,k))};
+
+/* SỔ TAY: ngày quan trọng + nhắc giờ/ngày */
+const jd2d=j=>{let a,b,c;if(j>2299160){a=j+32044;b=INT((4*a+3)/146097);c=a-INT(b*146097/4)}else{b=0;c=j+32082}const d=INT((4*c+3)/1461),e=c-INT(1461*d/4),m=INT((5*e+2)/153);return[e-INT((153*m+2)/5)+1,m+3-12*INT(m/10),b*100+d-4800+INT(m/10)]};
+function l2s(ld,lm,ly){let a,b;if(lm<11){a=m11(ly-1);b=m11(ly)}else{a=m11(ly);b=m11(ly+1)}
+ const k=INT(0.5+(a-2415021.076998695)/29.530588853);let off=lm-11;if(off<0)off+=12;
+ if(b-a>365){const lo=leapOff(a);if(off>=lo)off+=1}return jd2d(nmd(k+off)+ld-1)}
+function lunarDate(d,m,y){let r=l2s(d,m,y);if(d>29&&solar2lunar(r[0],r[1],r[2])[0]!=d)r=l2s(29,m,y);return new Date(r[2],r[1]-1,r[0])}
+function nextD(e,today){const mk=y=>e.cal=="l"?lunarDate(e.d,e.m,y):new Date(y,e.m-1,e.d);if(e.y)return mk(e.y);
+ const y0=today.getFullYear();for(let y=y0-1;y<=y0+1;y++){const t=mk(y);if(t>=today)return t}return null}
+const rd=(k,df)=>{try{return JSON.parse(localStorage.getItem(k))||df}catch(e){return df}},wr=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const dur=m=>m>=60?INT(m/60)+" giờ"+(m%60?" "+m%60+" phút":""):m+" phút";
+const when=(o,now)=>{const m=Math.round((o-now)/6e4);return m>0?"còn "+dur(m):m==0?"đã tới giờ":"đã qua "+dur(-m)};
+let dueDay="";
+function brender(){const now=new Date(),act=rd("ngAct",[]);
+ $("bn").innerHTML=dueDay+act.map(a=>`<div>⏰ <b>${esc(a.t0)}</b> lúc ${pad(new Date(a.o).getHours())}:${pad(new Date(a.o).getMinutes())} ${fm(new Date(a.o))}: ${when(a.o,now)}<button data-k="${esc(a.k)}">Đã biết</button></div>`).join("");
+ $("bn").hidden=!$("bn").innerHTML}
+/* --- Ngày quan trọng --- */
+function nrender(){const today=new Date();today.setHours(0,0,0,0);
+ const ev=rd("nn",[]).map(e=>{const t=nextD(e,today);return Object.assign({},e,{t,n:t?Math.round((t-today)/864e5):-1})}),due=ev.filter(e=>e.n>=0&&e.n<=e.a).sort((a,b)=>a.n-b.n);
+ dueDay=due.map(e=>`<div>🔔 <b>${esc(e.t0)}</b> ${e.n==0?"là <b>hôm nay</b>":"còn <b>"+e.n+" ngày</b>"} (${fm(e.t)})</div>`).join("");
+ if(window.Notification&&Notification.permission=="granted"){const sent=rd("nnSent",{}),k=fm(today);let c=0;
+  due.forEach(e=>{if(sent[e.id]!==k){new Notification("Lịch Âm: "+e.t0,{body:e.n==0?"Hôm nay":"Còn "+e.n+" ngày ("+fm(e.t)+")",icon:"favicon.png"});sent[e.id]=k;c=1}});if(c)wr("nnSent",sent)}
+ $("nl").innerHTML=ev.sort((a,b)=>(a.n<0)-(b.n<0)||a.n-b.n).map(e=>`<li><span><b>${esc(e.t0)}</b> – ${e.cal=="l"?"Âm":"Dương"} ${e.d}/${e.m}${e.y?"/"+e.y:" hằng năm"} → ${e.t?fm(e.t):"?"} <small>(${e.n<0?"đã qua":e.n==0?"hôm nay":"còn "+e.n+" ngày"})</small></span><button data-id="${esc(e.id)}" aria-label="Xóa ${esc(e.t0)}">Xóa</button></li>`).join("")||'<li><small>Chưa có ngày nào được lưu.</small></li>';
+ brender()}
+$("nadd").onclick=()=>{const t0=$("nt").value.trim(),cal=$("nc").value,d=+$("nd").value,m=+$("nm").value,y=+$("ny").value||0,a=+$("na").value;
+ let b=!t0||!(d>=1&&d<=31)||!(m>=1&&m<=12)||(y&&(y<1900||y>2150));
+ if(!b&&cal=="s")b=new Date(y||2024,m-1,d).getDate()!=d;if(!b&&cal=="l"&&d>30)b=true;
+ $("ne").textContent=b?"Vui lòng nhập tên và ngày tháng hợp lệ.":"";if(b)return;
+ const l=rd("nn",[]);l.push({id:Date.now().toString(36),t0,cal,d,m,y:y||undefined,a});wr("nn",l);["nt","nd","nm","ny"].forEach(i=>$(i).value="");nrender()};
+$("nl").onclick=e=>{const id=e.target.dataset&&e.target.dataset.id;if(id){wr("nn",rd("nn",[]).filter(x=>x.id!==id));nrender()}};
+/* --- Nhắc giờ/ngày --- */
+const REP={o:"Một lần",d:"Hằng ngày",w:"Hằng tuần",m:"Hằng tháng"};
+const startOf=e=>{const[y,mo,d]=e.date.split("-").map(Number),[h,mi]=e.time.split(":").map(Number);return new Date(y,mo-1,d,h,mi)};
+const valid=(e,d,s)=>d>=s&&(e.rep!="w"||d.getDay()==s.getDay())&&(e.rep!="m"||d.getDate()==Math.min(s.getDate(),new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));
+const at=(now,i,s)=>new Date(now.getFullYear(),now.getMonth(),now.getDate()+i,s.getHours(),s.getMinutes());
+function occs(e,now){const s=startOf(e);if(e.rep=="o")return[s];const o=[];for(let i=-1;i<=1;i++){const d=at(now,i,s);if(valid(e,d,s))o.push(d)}return o}
+function nextOcc(e,now){const s=startOf(e);if(e.rep=="o")return s>=now?s:null;for(let i=0;i<=62;i++){const d=at(now,i,s);if(d>=now&&valid(e,d,s))return d}return null}
+function beep(){try{const A=window.AudioContext||window.webkitAudioContext,c=new A(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.15;o.start();setTimeout(()=>{o.stop();c.close()},700)}catch(e){}}
+let lastDay=fm(new Date());
+function tick(){const now=new Date(),fired=rd("ngFired",{}),act=rd("ngAct",[]);let ch=0;
+ rd("ng",[]).forEach(e=>occs(e,now).forEach(o=>{const k=e.id+"|"+o.getTime();
+  if(fired[k]||o<(e.cr||0)||now<o-e.adv*6e4||now-o>864e5)return;
+  fired[k]=now.getTime();act.push({k,t0:e.t0,o:o.getTime()});ch=1;
+  if(window.Notification&&Notification.permission=="granted")new Notification("⏰ "+e.t0,{body:"Lúc "+pad(o.getHours())+":"+pad(o.getMinutes())+" – "+when(o,now),icon:"favicon.png"})}));
+ if(ch){Object.keys(fired).forEach(k=>{if(now-fired[k]>2592e5)delete fired[k]});wr("ngFired",fired);wr("ngAct",act);beep()}
+ if(fm(now)!=lastDay){lastDay=fm(now);nrender()}else brender();grender()}
+function grender(){const now=new Date(),l=rd("ng",[]).map(e=>Object.assign({},e,{o:nextOcc(e,now)}));
+ $("gl").innerHTML=l.sort((a,b)=>(!a.o)-(!b.o)||a.o-b.o).map(e=>`<li><span><b>${esc(e.t0)}</b> – ${REP[e.rep]} lúc ${esc(e.time)}${e.adv?", nhắc trước "+dur(+e.adv):""} → ${e.o?fm(e.o)+" <small>("+when(e.o,now)+")</small>":"<small>(đã qua)</small>"}</span><button data-id="${esc(e.id)}" aria-label="Xóa ${esc(e.t0)}">Xóa</button></li>`).join("")||'<li><small>Chưa có nhắc giờ nào.</small></li>'}
+$("gadd").onclick=()=>{const t0=$("gt").value.trim(),date=$("gd").value,time=$("gh").value,rep=$("gr").value,adv=+$("ga").value,e={t0,date,time,rep,adv};
+ const m=!t0||!date||!time?"Vui lòng nhập việc cần nhắc, ngày và giờ.":rep=="o"&&startOf(e)<new Date()?"Thời điểm này đã qua, vui lòng chọn lại.":"";
+ $("ne").textContent=m;if(m)return;
+ const l=rd("ng",[]);l.push({id:Date.now().toString(36),t0,date,time,rep,adv,cr:Date.now()});wr("ng",l);$("gt").value="";tick()};
+$("gl").onclick=e=>{const id=e.target.dataset&&e.target.dataset.id;if(id){wr("ng",rd("ng",[]).filter(x=>x.id!==id));grender()}};
+$("bn").onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(k){wr("ngAct",rd("ngAct",[]).filter(x=>x.k!==k));brender()}};
+document.querySelectorAll("#nn .tabs button[data-t]").forEach(b=>b.onclick=()=>{document.querySelectorAll("#nn .tabs button[data-t]").forEach(x=>x.classList.toggle("on",x==b));$("ntab1").hidden=b.dataset.t!="d";$("ntab2").hidden=b.dataset.t!="g";$("ne").textContent=""});
+$("nbell").onclick=()=>{if(!window.Notification){$("ne").textContent="Trình duyệt này không hỗ trợ thông báo.";return}Notification.requestPermission().then(()=>{nrender();tick()})};
+{const n=new Date();$("gd").value=n.getFullYear()+"-"+pad(n.getMonth()+1)+"-"+pad(n.getDate());$("gh").value=pad(n.getHours())+":"+pad(n.getMinutes())}
+nrender();tick();setInterval(tick,20000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)tick()});
+})();
+{const tb=[...document.querySelectorAll(".nav button")];
+function pick(b,f){tb.forEach(x=>{const on=x==b;x.classList.toggle("on",on);x.setAttribute("aria-selected",on);x.tabIndex=on?0:-1;$(x.dataset.p).hidden=!on});if(f)b.focus()}
+tb.forEach((b,i)=>{b.onclick=()=>pick(b);b.onkeydown=e=>{const k={ArrowRight:1,ArrowLeft:-1}[e.key];if(k){e.preventDefault();pick(tb[(i+k+tb.length)%tb.length],1)}}});
+pick(tb[0])}
 </script></main></body></html>
