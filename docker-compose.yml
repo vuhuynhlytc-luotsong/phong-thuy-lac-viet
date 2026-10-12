@@ -1,15 +1,11 @@
 services:
   lich-am:
     build: .
-    image: lich-am:1.0
-    container_name: lich-am
     ports:
-      - "8080:80"        # đổi 8080 nếu cổng này đã bị dùng
+      - "8080:3000"
+    environment:
+      - ADMIN_TOKEN=${ADMIN_TOKEN:?Hãy đặt ADMIN_TOKEN trong file .env}
+      - TRUST_PROXY=${TRUST_PROXY:-0}     # đặt 1 nếu chạy sau nginx / Cloudflare
+    volumes:
+      - ./data:/app/data                  # key, phiên đăng nhập và sổ tay của mọi tài khoản
     restart: unless-stopped
-    read_only: true
-    tmpfs:
-      - /var/cache/nginx
-      - /var/run
-      - /tmp
-    mem_limit: 64m
-    cpus: 0.25

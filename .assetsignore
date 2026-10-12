@@ -1,8 +1,0 @@
-.git
-.gitignore
-.dockerignore
-.assetsignore
-Dockerfile
-docker-compose.yml
-nginx.conf
-HUONG-DAN.md

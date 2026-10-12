@@ -1,0 +1,45 @@
+# Khi bạn đẩy tag phiên bản (ví dụ v1.1): kiểm tra khớp version.json, rồi build và đẩy ảnh lên ghcr.io
+name: Publish Docker image
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Kiểm tra tag khớp version.json
+        run: |
+          FILE=$(python3 -c "import json;print(json.load(open('version.json'))['version'])")
+          TAG="${GITHUB_REF_NAME#v}"
+          if [ "$FILE" != "$TAG" ]; then
+            echo "Tag $GITHUB_REF_NAME không khớp version.json ($FILE). Hãy dùng ./release.sh để phát hành."
+            exit 1
+          fi
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=match,pattern=v(.*),group=1
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

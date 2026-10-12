@@ -58,6 +58,8 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
 .hd{font-size:22px;font-weight:700;color:var(--red);margin:8px 0 2px}
 .bn{background:var(--sel);border:1px solid var(--gold);border-radius:12px;padding:10px 14px}.bn div{margin:2px 0}.bn button{padding:2px 10px;margin-left:8px}
 .nl{list-style:none;margin:10px 0 0;padding:0}.nl li{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:8px 0}.nl small{color:var(--mute)}.nl button{padding:4px 12px;color:var(--bad)}
+.ver{font-size:13px;font-weight:600;color:var(--mute);border:1px solid var(--line);border-radius:99px;padding:2px 10px;background:var(--card);align-self:center}
+.acct{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--mute)}.acct #acctSync{flex:1}.acct button{padding:4px 12px;font-size:14px}
 .nav{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:58px;padding:10px 6px;font-size:15px;font-weight:700;line-height:1.2;text-align:center}
 .nav button small{font-weight:400;font-size:12px;color:var(--mute)}
@@ -67,7 +69,9 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
 @media(max-width:760px){.cal{grid-template-columns:1fr}.c{min-height:54px}.c b{font-size:18px}.nav{gap:6px}.nav button{min-height:52px;padding:6px 3px;font-size:12px}.nav button small{display:none}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body><main>
-<h1><img src="favicon.png" alt="" width="44" height="44">Phong Thủy Lạc Việt</h1>
+<h1><img src="favicon.png" alt="" width="44" height="44">Phong Thủy Lạc Việt<span id="appVer" class="ver" hidden></span></h1>
+<div id="acct" class="acct" hidden><span id="acctWho"></span><span id="acctSync" aria-live="polite"></span><button id="acctOut">Đăng xuất</button></div>
+<div id="appUpd" class="bn t" role="status" hidden></div>
 <div id="bn" class="bn t" role="status" hidden></div>
 <nav class="nav" role="tablist" aria-label="Các mục chính">
 <button role="tab" id="nv1" class="on" data-p="pn1" aria-controls="pn1" aria-selected="true">SỔ TAY ĐIỆN TỬ<small>Ngày quan trọng + giờ/ngày</small></button>
@@ -158,6 +162,59 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
 </section>
 </div>
 
+<!--SERVER_DATA-->
+<script>
+/* Kho dữ liệu: có server -> lưu theo tài khoản key trên máy chủ; mở file trực tiếp -> dùng localStorage như cũ */
+(function(){
+ const ME=window.__ME,DB=window.__DB,own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+ if(!ME||!DB){try{window.ST=window.localStorage}catch(e){window.ST={getItem:()=>null,setItem(){},removeItem(){}}}return}
+ const mem=Object.assign({},DB),dirty=new Set(),$=id=>document.getElementById(id);let timer=0,dead=0;
+ const status=t=>{$("acctSync").textContent=t};
+ function expired(){dead=1;status("Phiên đăng nhập đã hết hạn, đang chuyển về trang đăng nhập…");setTimeout(()=>{location.href="/"},1500)}
+ function flush(keep){
+  clearTimeout(timer);if(dead||!dirty.size)return Promise.resolve();
+  const set={},ks=[...dirty];ks.forEach(k=>set[k]=mem[k]);dirty.clear();status("Đang lưu…");
+  return fetch("/api/data",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({set}),keepalive:!!keep})
+   .then(r=>{if(r.status==401||r.status==403){expired();return false}if(!r.ok)throw 0;status("Đã lưu");return true})
+   .catch(()=>{ks.forEach(k=>dirty.add(k));status("Chưa lưu được, sẽ thử lại…");timer=setTimeout(flush,5000);return false})
+ }
+ window.ST={
+  getItem:k=>own(mem,k)?mem[k]:null,
+  setItem(k,v){mem[k]=String(v);dirty.add(k);status("Đang lưu…");clearTimeout(timer);timer=setTimeout(flush,400)},
+  removeItem(k){delete mem[k]}
+ };
+ /* Nhập 1 lần ghi chú cũ đang nằm trong trình duyệt (bản chưa có tài khoản) */
+ try{
+  const old=["by","nn","nnSent","ng","ngFired","ngAct"].filter(k=>localStorage.getItem(k)!==null);
+  if(!Object.keys(mem).length&&old.length){old.forEach(k=>{mem[k]=localStorage.getItem(k);dirty.add(k)});
+   flush().then(ok=>{if(ok)old.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}})})}
+ }catch(e){}
+ /* Thanh tài khoản */
+ const fm=d=>{const x=new Date(d);return String(x.getUTCDate()).padStart(2,"0")+"/"+String(x.getUTCMonth()+1).padStart(2,"0")+"/"+x.getUTCFullYear()};
+ $("acctWho").textContent="Tài khoản: "+(ME.name||"Khách")+" · "+(ME.expires?"dùng đến "+fm(ME.expires):"không giới hạn thời gian");
+ $("acct").hidden=false;
+ const nt=document.querySelector("#ntab1 .note");if(nt)nt.textContent="Ghi lại giỗ, sinh nhật, kỷ niệm. Bỏ trống năm để nhắc hằng năm. Ghi chú được lưu riêng cho tài khoản (key) của bạn trên máy chủ; thông báo chỉ hiện khi bạn mở trang.";
+ /* Phiên bản + báo khi server đã cập nhật bản mới */
+ const V=window.__VER;
+ if(V&&V.version){
+  const vb=$("appVer");vb.textContent="v"+V.version;
+  vb.title="Phiên bản "+V.version+(V.released?" · phát hành "+V.released.split("-").reverse().join("/"):"");vb.hidden=false;
+  let shown=0;
+  const chk=()=>{if(shown)return;
+   fetch("/api/version",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(n=>{
+    if(!n||!n.version||n.version===V.version)return;shown=1;
+    const u=$("appUpd"),b=document.createElement("button");
+    u.textContent="🔄 Đã có phiên bản mới v"+n.version+" (bạn đang dùng v"+V.version+"). ";
+    b.textContent="Tải lại để cập nhật";b.onclick=()=>flush().then(()=>location.reload());
+    u.appendChild(b);u.hidden=false}).catch(()=>{})};
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()});
+  setInterval(chk,6e5);
+ }
+ $("acctOut").onclick=()=>flush().then(()=>fetch("/api/logout",{method:"POST"})).then(()=>{location.href="/"});
+ document.addEventListener("visibilitychange",()=>{if(document.hidden)flush(true)});
+ window.addEventListener("pagehide",()=>flush(true));
+})();
+</script>
 <script>
 const $=id=>document.getElementById(id),INT=Math.floor,TZ=7;
 function jdFromDate(d,m,y){let a=INT((14-m)/12),yy=y+4800-a,mm=m+12*a-3;let j=d+INT((153*mm+2)/5)+365*yy+INT(yy/4)-INT(yy/100)+INT(yy/400)-32045;if(j<2299161)j=d+INT((153*mm+2)/5)+365*yy+INT(yy/4)-32083;return j}
@@ -225,7 +282,7 @@ const yv=c=>c.bad==0?"tot":c.bad==1?"tb":"xau",YL={tot:"Năm tốt",tb:"Năm bì
 const yc=y=>cc((y+6)%10,(y+8)%12),yes=(b,t,f)=>b?`<span class="ok">${t}</span>`:`<span class="no">${f}</span>`;
 function tuoi(){const by=+$("by").value,ty=+$("ty").value,o=$("tout");
  if(!(by>=1900&&by<=2150)||!(ty>=1900&&ty<=2200)||ty<by){o.innerHTML='<p class="note">Vui lòng nhập năm sinh (ví dụ 1990) và năm cần xem hợp lệ, năm xem không nhỏ hơn năm sinh.</p>';return}
- try{localStorage.setItem("by",by)}catch(e){}
+ try{ST.setItem("by",by)}catch(e){}
  const c=calc(by,ty),mp=napAm(by),my=napAm(ty),hp=mp.split(" ").pop(),hy=my.split(" ").pop(),v=yv(c);
  const rel=hp==hy?"Cùng hành, bình thường":SINH[hy]==hp?"Hành của năm sinh mệnh bạn (thuận)":SINH[hp]==hy?"Mệnh bạn sinh hành của năm (hao sức)":KHAC[hy]==hp?"Hành của năm khắc mệnh bạn (kém)":"Mệnh bạn khắc hành của năm (tạm được)";
  const nha=!c.kl&&c.ho[1]&&c.tt<0,cuoi=!c.kl&&c.tt<0,an=!c.tb&&c.tt<0;
@@ -242,7 +299,7 @@ function tuoi(){const by=+$("by").value,ty=+$("ty").value,o=$("tout");
  <dt>Làm nhà</dt><dd>${yes(nha,"Hợp","Nên tránh")}</dd><dt>Cưới hỏi</dt><dd>${yes(cuoi,"Hợp","Nên tránh")}</dd><dt>Làm ăn</dt><dd>${yes(an,"Hợp","Nên cân nhắc")}</dd></dl>
  <div class="tw"><table><thead><tr><th>Năm</th><th>Can Chi</th><th>Tuổi âm</th><th>Phạm</th><th>Kết luận</th></tr></thead><tbody>${rows}</tbody></table></div>
  <div class="note">Cách tính dân gian (Kim Lâu, Hoang Ốc, Tam Tai, Thái Tuế, ngũ hành nạp âm), chỉ mang tính tham khảo. Tuổi âm tính theo năm, chưa xét ngày sinh trước hay sau Tết.</div>`}
-$("ty").value=solar2lunar(now.getDate(),M,Y)[2];try{$("by").value=localStorage.getItem("by")||""}catch(e){}
+$("ty").value=solar2lunar(now.getDate(),M,Y)[2];try{$("by").value=ST.getItem("by")||""}catch(e){}
 $("xem").onclick=tuoi;[$("by"),$("ty")].forEach(e=>e.onkeydown=k=>{if(k.key==="Enter")tuoi()});
 if($("by").value)tuoi();
 render();
@@ -288,7 +345,7 @@ function l2s(ld,lm,ly){let a,b;if(lm<11){a=m11(ly-1);b=m11(ly)}else{a=m11(ly);b=
 function lunarDate(d,m,y){let r=l2s(d,m,y);if(d>29&&solar2lunar(r[0],r[1],r[2])[0]!=d)r=l2s(29,m,y);return new Date(r[2],r[1]-1,r[0])}
 function nextD(e,today){const mk=y=>e.cal=="l"?lunarDate(e.d,e.m,y):new Date(y,e.m-1,e.d);if(e.y)return mk(e.y);
  const y0=today.getFullYear();for(let y=y0-1;y<=y0+1;y++){const t=mk(y);if(t>=today)return t}return null}
-const rd=(k,df)=>{try{return JSON.parse(localStorage.getItem(k))||df}catch(e){return df}},wr=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const rd=(k,df)=>{try{return JSON.parse(ST.getItem(k))||df}catch(e){return df}},wr=(k,v)=>{try{ST.setItem(k,JSON.stringify(v))}catch(e){}};
 const dur=m=>m>=60?INT(m/60)+" giờ"+(m%60?" "+m%60+" phút":""):m+" phút";
 const when=(o,now)=>{const m=Math.round((o-now)/6e4);return m>0?"còn "+dur(m):m==0?"đã tới giờ":"đã qua "+dur(-m)};
 let dueDay="";

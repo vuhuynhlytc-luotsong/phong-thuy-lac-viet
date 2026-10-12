@@ -1,3 +1,5 @@
-HUONG-DAN.md
-*.zip
+data
+.env
 .git
+node_modules
+*.md
