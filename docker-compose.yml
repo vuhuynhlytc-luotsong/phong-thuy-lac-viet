@@ -2,7 +2,7 @@ services:
   lich-am:
     build: .
     ports:
-      - "8080:3000"
+      - "127.0.0.1:8080:3000"
     environment:
       - ADMIN_TOKEN=${ADMIN_TOKEN:?Hãy đặt ADMIN_TOKEN trong file .env}
       - TRUST_PROXY=${TRUST_PROXY:-0}     # đặt 1 nếu chạy sau nginx / Cloudflare
