@@ -1,5 +1,8 @@
+name: phong-thuy-lac-viet
 services:
-  lich-am:
+  app:
+    container_name: phong-thuy-lac-viet
+    image: phong-thuy-lac-viet:local
     build: .
     ports:
       - "127.0.0.1:8080:3000"
