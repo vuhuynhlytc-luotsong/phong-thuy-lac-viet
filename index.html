@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="vi"><link rel="icon" type="image/png" href="favicon.png"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lịch Âm và Ngày Tốt Xấu</title>
+<title>Lịch Âm và Xem Tuổi</title>
 <style>
 :root{--bg:#f2f2f0;--card:#fff;--ink:#241b1b;--mute:#6b6060;--line:#ddd6d3;--red:#b3202f;--gold:#9a6b00;--good:#1b7a3d;--goodbg:#dff2e5;--bad:#a3162a;--badbg:#f8dfe2;--mid:#8a7a5a;--sel:#fff3d1}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171313;--card:#221c1c;--ink:#f1e9e7;--mute:#a89b98;--line:#3a3030;--red:#ff7b87;--gold:#e0b04a;--good:#58d08a;--goodbg:#173a25;--bad:#ff8592;--badbg:#44181e;--mid:#c9b88a;--sel:#4a3a12}}
@@ -10,7 +10,8 @@
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:400 17px/1.5 system-ui,"Segoe UI",Roboto,Arial,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
 main{max-width:980px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1.25fr 1fr;gap:16px}
-h1{grid-column:1/-1;margin:0;font-size:26px;color:var(--red)}
+h1{grid-column:1/-1;margin:0;font-size:26px;color:var(--red);display:flex;align-items:center;gap:12px}
+h1 img{width:44px;height:44px;border-radius:10px;flex:none}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
 .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 button,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
@@ -54,7 +55,7 @@ th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-
 @media(max-width:760px){main{grid-template-columns:1fr}.c{min-height:54px}.c b{font-size:18px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body><main>
-<h1>Lịch Âm và Ngày Tốt Xấu</h1>
+<h1><img src="favicon.png" alt="" width="44" height="44">Lịch Âm và Xem Tuổi</h1>
 <section class="card">
  <div class="bar">
   <button id="pv" aria-label="Tháng trước">&lsaquo; Trước</button>
