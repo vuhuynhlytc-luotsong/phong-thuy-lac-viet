@@ -12,7 +12,7 @@ const PORT = +process.env.PORT || 3000;
 const TRUST = process.env.TRUST_PROXY === '1';        // =1 khi chạy sau nginx/Cloudflare
 const SESSION_MS = 30 * 864e5;                          // phiên đăng nhập 30 ngày
 const MAX_VALUE = 2e5, MAX_TOTAL = 1e6, MAX_FIELDS = 64; // giới hạn dữ liệu sổ tay mỗi tài khoản
-const OPEN = ['/login.html', '/favicon.png'];
+const OPEN = ['/login.html', '/favicon.png', '/admin.html'];
 // Phiên bản app: chỉ sửa trong version.json (hoặc dùng ./release.sh). Ví dụ "1.1"
 const VER = (() => {
   try {
@@ -22,6 +22,95 @@ const VER = (() => {
   return { version: '0.0', released: '' };
 })();
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.css': 'text/css', '.json': 'application/json' };
+
+// ---------- cập nhật nhanh các file trong public/ từ GitHub (không cần build lại ảnh Docker) ----------
+// Quy trình: sửa public/ -> .\dang-ban-moi.ps1 -Version 1.0.1 (tạo public/update.json + push) -> trang /admin.html bấm "Cập nhật ngay".
+// Chỉ cập nhật file .html/.js/.css/.json trong public/ (trừ admin.html). Sửa server.js hoặc Dockerfile vẫn cần ./release.sh như cũ.
+const UPDATE_BASE = (process.env.UPDATE_BASE || '').replace(/\/+$/, '');
+const F_META = path.join(DIR, 'site-meta.json'), D_SITE = path.join(DIR, 'site');
+const NAME_RE = /^[A-Za-z0-9._-]{1,60}\.(html|js|css|json)$/, PROTECTED = new Set(['admin.html', 'update.json']);
+const VER_RE = /^\d{1,3}(\.\d{1,3}){1,2}$/, BASE_RE = /^https:\/\/raw\.githubusercontent\.com\/[\w.-]+\/[\w.-]+\/[\w./-]+$/;
+const vparts = v => { const a = String(v).split('.').map(Number); while (a.length < 3) a.push(0); return a; };
+const cmpVer = (a, b) => { const x = vparts(a), y = vparts(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
+const BUNDLED = (() => {            // số phiên bản của bản đóng gói trong ảnh Docker (version.json hoặc public/update.json, lấy số lớn hơn)
+  let b = '';
+  try { const v = JSON.parse(fs.readFileSync(path.join(PUB, 'update.json'), 'utf8')).version; if (VER_RE.test(String(v))) b = String(v); } catch (e) { /* không có thì thôi */ }
+  return b && cmpVer(b, VER.version) > 0 ? b : VER.version;
+})();
+let META = (() => {
+  let m = { cur: '', prev: '', date: '' };
+  try { m = Object.assign(m, JSON.parse(fs.readFileSync(F_META, 'utf8'))); } catch (e) { /* chưa có */ }
+  if (m.cur && cmpVer(m.cur, BUNDLED) <= 0) {   // ảnh Docker mới hơn hoặc bằng bản đã cập nhật từ xa -> bỏ bản cũ, dùng bản đóng gói
+    console.log('Ban dong goi v' + BUNDLED + ' moi hon ban cap nhat v' + m.cur + ', dung ban dong goi');
+    try { fs.rmSync(D_SITE, { recursive: true, force: true }); fs.rmSync(F_META, { force: true }); } catch (e) { /* bỏ qua */ }
+    m = { cur: '', prev: '', date: '' };
+  }
+  return m;
+})();
+const curVer = () => META.cur || BUNDLED;
+const verInfo = () => ({ version: curVer(), released: META.cur ? META.date : VER.released });
+function siteFile(name) {
+  if (!META.cur || !NAME_RE.test(name) || PROTECTED.has(name)) return null;
+  try { return fs.readFileSync(path.join(D_SITE, META.cur, name)); } catch (e) { return null; }
+}
+const norm = t => t.replace(/\r\n/g, '\n');
+const sha256 = t => crypto.createHash('sha256').update(t, 'utf8').digest('hex');
+async function ghGet(url) {
+  const r = await fetch(url + '?t=' + Date.now(), { headers: { 'Cache-Control': 'no-cache' }, signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error('Không tải được ' + url.split('/').pop() + ' (HTTP ' + r.status + ')');
+  return r.text();
+}
+async function fetchManifest() {
+  if (!BASE_RE.test(UPDATE_BASE)) throw new Error('UPDATE_BASE chưa đặt hoặc sai. Dạng đúng: https://raw.githubusercontent.com/<tài-khoản>/<repo>/main/public');
+  let m; try { m = JSON.parse(await ghGet(UPDATE_BASE + '/update.json')); } catch (e) { throw new Error(/^Không tải/.test(e.message) ? e.message : 'update.json không đọc được'); }
+  if (!m || !VER_RE.test(String(m.version))) throw new Error('update.json thiếu số phiên bản dạng 1.0.1');
+  return { version: String(m.version), note: String(m.note || '').slice(0, 300), date: /^\d{4}-\d{2}-\d{2}$/.test(String(m.date)) ? String(m.date) : '', files: m.files && typeof m.files === 'object' ? m.files : {} };
+}
+async function downloadFiles(m) {
+  const names = Object.keys(m.files);
+  if (!names.length || names.length > 20) throw new Error('Danh sách file trong update.json không hợp lệ');
+  if (!m.files['index.html']) throw new Error('update.json phải có index.html');
+  const out = {};
+  for (const n of names) {
+    if (!NAME_RE.test(n) || PROTECTED.has(n)) throw new Error('Tên file không được phép cập nhật: ' + n);
+    const t = norm(await ghGet(UPDATE_BASE + '/' + n));
+    if (t.length > 2e6) throw new Error(n + ' quá lớn (tối đa 2 MB)');
+    if (sha256(t) !== String(m.files[n]).toLowerCase()) throw new Error('Sai mã kiểm tra ' + n + '. GitHub có thể chưa cập nhật xong, đợi vài phút rồi thử lại.');
+    out[n] = t;
+  }
+  const h = out['index.html'];
+  if (!/<\/html>\s*$/i.test(h) || !/<title>/i.test(h)) throw new Error('index.html trông không hoàn chỉnh, đã hủy cập nhật');
+  if (!h.includes('<!--SERVER_DATA-->')) throw new Error('index.html thiếu dòng <!--SERVER_DATA-->, nếu cập nhật sẽ mất ghi chú theo tài khoản. Đã hủy.');
+  return out;
+}
+async function updateApi(res, p) {
+  const cur = curVer();
+  if (p === '/api/admin/update-status') {
+    const o = { current: cur, bundled: BUNDLED, previous: META.cur ? (META.prev || BUNDLED) : null, base: UPDATE_BASE };
+    try { const m = await fetchManifest(); Object.assign(o, { remote: m.version, note: m.note, date: m.date, hasUpdate: cmpVer(m.version, cur) > 0 }); } catch (e) { o.error = e.message; }
+    return json(res, 200, o);
+  }
+  if (p === '/api/admin/update') {
+    try {
+      const m = await fetchManifest();
+      if (cmpVer(m.version, cur) <= 0) return json(res, 409, { ok: false, error: 'Đang là bản mới nhất (' + cur + ')' });
+      const files = await downloadFiles(m), dir = path.join(D_SITE, m.version);
+      fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
+      for (const [n, t] of Object.entries(files)) fs.writeFileSync(path.join(dir, n), t);
+      if (META.prev && META.prev !== META.cur) fs.rmSync(path.join(D_SITE, META.prev), { recursive: true, force: true });
+      const next = { cur: m.version, prev: META.cur || '', date: m.date };
+      writeJson(F_META, next); META = next;
+      return json(res, 200, { ok: true, from: cur, to: m.version, files: Object.keys(files) });
+    } catch (e) { return json(res, 502, { ok: false, error: e.message }); }
+  }
+  if (p === '/api/admin/rollback') {
+    if (!META.cur) return json(res, 409, { ok: false, error: 'Đang dùng bản đóng gói, không có bản trước để quay lại' });
+    const old = META.cur, next = { cur: META.prev || '', prev: '', date: '' };
+    writeJson(F_META, next); META = next; fs.rmSync(path.join(D_SITE, old), { recursive: true, force: true });
+    return json(res, 200, { ok: true, to: curVer() });
+  }
+  return json(res, 404, {});
+}
 
 // ---------- tiện ích ----------
 const sha = s => crypto.createHash('sha256').update(s).digest('hex');
@@ -97,15 +186,15 @@ setInterval(() => { const n = Date.now(); for (const [ip, f] of fails) if (n - f
 const esc = s => s.replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 function renderApp(html, k) {
   const me = { name: k.name || '', expires: k.expires || null };
-  const inj = '<script>window.__ME=' + esc(JSON.stringify(me)) + ';window.__VER=' + esc(JSON.stringify(VER)) + ';window.__DB=' + esc(JSON.stringify(loadUser(k.key))) + ';</script>';
+  const inj = '<script>window.__ME=' + esc(JSON.stringify(me)) + ';window.__VER=' + esc(JSON.stringify(verInfo())) + ';window.__DB=' + esc(JSON.stringify(loadUser(k.key))) + ';</script>';
   return html.replace('<!--SERVER_DATA-->', () => inj);   // dùng hàm để ký tự $ trong dữ liệu không bị hiểu nhầm
 }
 
 // ---------- xử lý yêu cầu ----------
 async function handle(req, res) {
   const p = new URL(req.url, 'http://x').pathname, ip = clientIp(req);
-  res.setHeader('X-App-Version', VER.version);
-  if (p === '/api/version') return json(res, 200, VER);   // công khai, không cần đăng nhập
+  res.setHeader('X-App-Version', curVer());
+  if (p === '/api/version') return json(res, 200, verInfo());   // công khai, không cần đăng nhập
 
   if (p === '/api/login' && req.method === 'POST') {
     const f = fails.get(ip) || { n: 0, t: Date.now() };
@@ -135,7 +224,11 @@ async function handle(req, res) {
 
   if (p.startsWith('/api/admin/')) {
     if (!ADMIN || ADMIN === PLACEHOLDER) return json(res, 503, { error: 'admin_disabled', hint: 'Hay dat ADMIN_TOKEN rieng trong file .env' });
-    if (!same(req.headers['x-admin-token'] || '', ADMIN)) return json(res, 403, { error: 'forbidden' });
+    const af = fails.get('a:' + ip) || { n: 0, t: Date.now() };
+    if (Date.now() - af.t > 6e4) { af.n = 0; af.t = Date.now(); }
+    if (af.n >= 10) return json(res, 429, { error: 'too_many' });
+    if (!same(req.headers['x-admin-token'] || '', ADMIN)) { af.n++; fails.set('a:' + ip, af); return json(res, 403, { error: 'forbidden' }); }
+    if (p === '/api/admin/update-status' || p === '/api/admin/update' || p === '/api/admin/rollback') return updateApi(res, p);
     const keys = loadKeys(), b = req.method === 'POST' ? ((await body(req)) || {}) : {};
     const find = () => keys.find(x => x.key === String(b.key || '').trim().toUpperCase());
     if (p === '/api/admin/list') return json(res, 200, keys.map(k => ({ key: k.key, name: k.name, expires: k.expires, active: k.active, bound: !!k.device, boundAt: k.boundAt || null, lastLogin: k.lastLogin || null })));
@@ -173,7 +266,9 @@ async function handle(req, res) {
   if (!OPEN.includes(f) && !a) { res.writeHead(401, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Cần đăng nhập'); }
   const full = path.join(PUB, f);
   if (!full.startsWith(PUB + path.sep)) { res.writeHead(403); return res.end(); }
+  const own = siteFile(f.slice(1));
   fs.readFile(full, (e, d) => {
+    if (own) { e = null; d = own; }
     if (e) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Không tìm thấy'); }
     const ext = path.extname(full);
     if (f === '/index.html' && a) d = renderApp(d.toString('utf8'), a.k);
@@ -185,6 +280,6 @@ async function handle(req, res) {
 http.createServer((req, res) => {
   handle(req, res).catch(e => { console.error(e); if (!res.headersSent) json(res, 500, { error: 'server' }); else res.end(); });
 }).listen(PORT, () => {
-  console.log('Phong Thuy Lac Viet v' + VER.version + ' chay o cong ' + PORT);
+  console.log('Phong Thuy Lac Viet v' + curVer() + ' chay o cong ' + PORT);
   if (!ADMIN || ADMIN === PLACEHOLDER) console.warn('CANH BAO: ADMIN_TOKEN chua duoc dat (hoac con la gia tri mau). Chuc nang quan tri dang TAT.');
 });

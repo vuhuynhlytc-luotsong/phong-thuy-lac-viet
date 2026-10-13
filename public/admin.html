@@ -11,7 +11,7 @@ th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left;vertical-align:to
  <div class="c" id="up"><b>Cập nhật phiên bản</b><div id="us">Đang kiểm tra…</div><div id="um"></div>
   <button id="ucheck" class="g">Kiểm tra lại</button> <button id="ugo" hidden>Cập nhật ngay</button> <button id="urb" class="g" hidden>Quay lại bản trước</button></div>
  <div class="c"><b>Tạo key mới</b><br><input id="nm" placeholder="Tên khách" maxlength="80"> <input id="dy" type="number" min="0" value="30" style="width:90px"> ngày (0 = vô thời hạn) <button id="mk">Tạo key</button><div id="nk"></div></div>
- <div class="c tw"><table><thead><tr><th>Key</th><th>Tên</th><th>Hết hạn</th><th>Trạng thái</th><th>Máy</th><th>Thao tác</th></tr></thead><tbody id="tb"></tbody></table></div>
+ <div class="c tw"><table><thead><tr><th>Key</th><th>Tên</th><th>Hết hạn</th><th>Trạng thái</th><th>Máy</th><th>Đăng nhập gần nhất</th><th>Thao tác</th></tr></thead><tbody id="tb"></tbody></table></div>
  <button class="g" id="lo">Thoát quản trị</button>
 </div></main>
 <script>
@@ -21,15 +21,16 @@ const view=on=>{$("lg").hidden=on;$("ad").hidden=!on};
 async function api(p,b){const r=await fetch(p,{method:b?"POST":"GET",headers:{"x-admin-token":T,"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined});
  if(r.status==403||r.status==429){T="";try{sessionStorage.removeItem("at")}catch(e){}view(false);$("le").textContent=r.status==429?"Sai quá nhiều lần, thử lại sau 1 phút.":"Token không đúng.";throw new Error("auth")}return r.json()}
 async function load(){const l=await api("/api/admin/list"),t=new Date().toISOString().slice(0,10);view(true);ust();
- $("tb").innerHTML=l.filter(Boolean).sort((a,b)=>(b.created||"").localeCompare(a.created||"")).map(k=>{const st=!k.active?"Đã thu hồi":k.expires&&k.expires<t?"Hết hạn":"Hoạt động",K=esc(k.key);
-  return`<tr><td><code>${K}</code> <button class="g" data-c="${K}">Chép</button></td><td>${esc(k.name)}</td><td>${esc(k.expires||"Vô thời hạn")}</td><td>${st}</td><td>${k.device?"Đã gắn 1 máy":"Chưa dùng"}</td><td>${k.active?`<button class="g" data-r="${K}">Thu hồi</button> `:""}${k.device?`<button class="g" data-d="${K}">Đổi máy</button>`:""}</td></tr>`}).join("")||'<tr><td colspan="6">Chưa có key nào.</td></tr>'}
+ $("tb").innerHTML=l.filter(Boolean)..map(k=>{const st=!k.active?"Đã thu hồi":k.expires&&k.expires<t?"Hết hạn":"Hoạt động",K=esc(k.key);
+  return`<tr><td><code>${K}</code> <button class="g" data-c="${K}">Chép</button></td><td>${esc(k.name)}</td><td>${esc(k.expires||"Vô thời hạn")}</td><td>${st}</td><td>${k.bound?"Đã gắn 1 máy":"Chưa dùng"}</td><td>${esc(k.lastLogin?String(k.lastLogin).replace("T"," ").slice(0,16):"—")}</td><td>${k.active?`<button class="g" data-r="${K}">Thu hồi</button> `:`<button class="g" data-s="${K}">Khôi phục</button> `}${k.bound?`<button class="g" data-d="${K}">Đổi máy</button>`:""}</td></tr>`}).join("")||'<tr><td colspan="7">Chưa có key nào.</td></tr>'}
 $("lgb").onclick=async()=>{T=$("tk").value.trim();$("tk").value="";$("le").textContent="";try{await load();sessionStorage.setItem("at",T)}catch(e){}};
 $("mk").onclick=async()=>{const r=await api("/api/admin/create",{name:$("nm").value.trim(),days:+$("dy").value||0});
  $("nk").innerHTML=`<div class="nk">Key mới: <code>${esc(r.key)}</code> (${r.expires?"hết hạn "+esc(r.expires):"vô thời hạn"}) <button class="g" data-c="${esc(r.key)}">Chép</button></div>`;$("nm").value="";load()};
 $("tb").onclick=$("nk").onclick=async e=>{const d=e.target.dataset||{};
  if(d.c){try{await navigator.clipboard.writeText(d.c);e.target.textContent="Đã chép"}catch(x){prompt("Sao chép key:",d.c)}}
  if(d.r&&confirm("Thu hồi key "+d.r+"? Người đang dùng sẽ bị đăng xuất.")){await api("/api/admin/revoke",{key:d.r});load()}
- if(d.d&&confirm("Cho key "+d.d+" đổi sang máy khác? Máy cũ sẽ bị đăng xuất.")){await api("/api/admin/reset",{key:d.d});load()}};
+ if(d.d&&confirm("Cho key "+d.d+" đổi sang máy khác? Máy cũ sẽ bị đăng xuất.")){await api("/api/admin/unbind",{key:d.d});load()}
+ if(d.s){await api("/api/admin/restore",{key:d.s});load()}};
 async function ust(){$("us").textContent="Đang kiểm tra…";try{const s=await api("/api/admin/update-status");
  $("us").innerHTML="Đang chạy: <b>v"+esc(s.current)+"</b>"+(s.current!==s.bundled?" (bản gốc cài sẵn: v"+esc(s.bundled)+")":"")+(s.remote?" • Trên GitHub: <b>v"+esc(s.remote)+"</b>":"")+(s.error?'<br><span class="er">'+esc(s.error)+"</span>":"")+(s.note?"<br>Ghi chú: "+esc(s.note):"");
  $("ugo").hidden=!s.hasUpdate;$("ugo").textContent="Cập nhật lên v"+(s.remote||"");$("urb").hidden=!s.previous}catch(e){}}

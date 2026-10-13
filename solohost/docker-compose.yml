@@ -9,6 +9,7 @@ services:
       - "127.0.0.1:18480:3000"
     environment:
       - ADMIN_TOKEN=${ADMIN_TOKEN}
+      - UPDATE_BASE=https://raw.githubusercontent.com/vuhuynhlytc-luotsong/phong-thuy-lac-viet/main/public
     volumes:
       - lichamdata:/app/data
 volumes:
