@@ -1,9 +1,9 @@
 {
-  "version": "1.0.0",
-  "note": "Ban dau",
-  "date": "2026-10-13",
-  "files": {
-    "index.html": "748335191562a314f7e33ca3d1312b9635e5f143246686f756364972df11cc4d",
-    "login.html": "8028f6acee89a6871ff60f04e29419d30d8276309db47558e7b3882b33c98564"
-  }
+    "version":  "1.0.1",
+    "note":  "Thu cap nhat",
+    "date":  "2026-10-13",
+    "files":  {
+                  "index.html":  "748335191562a314f7e33ca3d1312b9635e5f143246686f756364972df11cc4d",
+                  "login.html":  "8028f6acee89a6871ff60f04e29419d30d8276309db47558e7b3882b33c98564"
+              }
 }
