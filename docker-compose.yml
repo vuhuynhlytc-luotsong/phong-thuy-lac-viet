@@ -1,14 +1,12 @@
-name: phong-thuy-lac-viet
 services:
   app:
-    container_name: phong-thuy-lac-viet
-    image: phong-thuy-lac-viet:local
     build: .
     ports:
-      - "127.0.0.1:8080:3000"
+      - "18480:3000"
     environment:
-      - ADMIN_TOKEN=${ADMIN_TOKEN:?Hãy đặt ADMIN_TOKEN trong file .env}
-      - TRUST_PROXY=${TRUST_PROXY:-0}     # đặt 1 nếu chạy sau nginx / Cloudflare
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+      - UPDATE_BASE=https://raw.githubusercontent.com/<tài-khoản>/<repo>/main/public
+      # - GITHUB_TOKEN=${GITHUB_TOKEN}   # chỉ cần nếu repo để private
     volumes:
-      - ./data:/app/data                  # key, phiên đăng nhập và sổ tay của mọi tài khoản
+      - ./data:/app/data
     restart: unless-stopped

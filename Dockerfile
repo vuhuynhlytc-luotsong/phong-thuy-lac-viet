@@ -1,9 +1,8 @@
-FROM node:22-alpine
-ENV NODE_ENV=production
+FROM node:20-alpine
 WORKDIR /app
-COPY server.js version.json ./
+COPY server.mjs updater.mjs ./
 COPY public ./public
+ENV DATA_DIR=/app/data
+VOLUME /app/data
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-  CMD wget -q -O /dev/null http://127.0.0.1:3000/api/version || exit 1
-CMD ["node","server.js"]
+CMD ["node","server.mjs"]
