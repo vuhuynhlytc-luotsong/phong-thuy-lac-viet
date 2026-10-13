@@ -8,6 +8,11 @@ const GH = process.env.GITHUB_TOKEN ? { Authorization: 'Bearer ' + process.env.G
 const KEYF = path.join(DATA, 'keys.json'), METAF = path.join(DATA, 'site-meta.json'), SITE = path.join(DATA, 'site');
 const OPEN = new Set(['/login.html', '/favicon.png', '/admin.html']), fails = new Map(), DAY = 864e5;
 fs.mkdirSync(SITE, { recursive: true });
+const rj0 = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return d; } };
+{ // bản đóng gói (publish lại) mới hơn hoặc bằng bản đã cập nhật từ xa -> bỏ bản cũ trong data, dùng bản đóng gói
+  const m0 = rj0(METAF, { cur: '' }), b0 = rj0(path.join(PUB, 'version.json'), {}).version || '1.0.0';
+  if (m0.cur && cmpVer(m0.cur, b0) <= 0) { fs.rmSync(SITE, { recursive: true, force: true }); fs.mkdirSync(SITE, { recursive: true }); fs.writeFileSync(METAF, JSON.stringify({ cur: '', prev: '' })); console.log('Bản đóng gói v' + b0 + ' mới hơn bản đã cập nhật v' + m0.cur + ', dùng bản đóng gói'); }
+}
 const rj = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return d; } };
 const wj = (f, o) => { const t = f + '.tmp'; fs.writeFileSync(t, JSON.stringify(o, null, 2)); fs.renameSync(t, f); };
 const keys = () => rj(KEYF, []), meta = () => rj(METAF, { cur: '', prev: '' });
