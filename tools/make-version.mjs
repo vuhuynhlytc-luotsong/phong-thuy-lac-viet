@@ -1,7 +1,7 @@
 // Dùng khi có Node: node tools/make-version.mjs 1.1.0 "Ghi chú"
 import fs from 'node:fs'; import path from 'node:path'; import crypto from 'node:crypto';
 const [ver, note = ''] = process.argv.slice(2);
-if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ver || '')) { console.error('Dùng: node tools/make-version.mjs 1.1.0 "Ghi chú"'); process.exit(1); }
+if (!/^\d{1,3}(\.\d{1,3}){1,2}$/.test(ver || '')) { console.error('Dùng: node tools/make-version.mjs 1.1.0 "Ghi chú"'); process.exit(1); }
 const dir = path.resolve('public'), files = {};
 for (const n of fs.readdirSync(dir).sort()) {
   if (!/\.(html|js|css|json)$/.test(n) || n === 'admin.html' || n === 'update.json') continue;

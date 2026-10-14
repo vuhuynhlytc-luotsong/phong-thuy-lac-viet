@@ -1,13 +1,19 @@
-# Cập nhật Phong Thủy Lạc Việt
+# Cập nhật app bằng nút "Cập nhật ngay"
 
-## A. Sửa giao diện / thêm tính năng (public/*.html, js, css) — KHÔNG cần build lại, KHÔNG cài lại
-1. Sửa file trong `public/` (trừ admin.html).
-2. Trong PowerShell tại thư mục dự án:  `.\dang-ban-moi.ps1 -Version 1.1.0 -Note "Them tinh nang X"`
-   (tạo public/update.json kèm mã SHA-256, commit, push lên GitHub).
-3. Đợi 1–5 phút → mở `https://<địa-chỉ-app>/admin.html` → đăng nhập ADMIN_TOKEN → **Cập nhật ngay**.
-   Có nút **Quay lại bản trước**. Dữ liệu key và sổ tay không bị đụng tới.
-   Repo GitHub phải để **Public**.
+## Người dùng
+Khi trên GitHub có phiên bản mới, đầu trang app hiện dòng: "Có phiên bản mới vX ... [Cập nhật ngay]".
+Bấm nút, app tự tải bản mới (có kiểm tra mã SHA-256) rồi tải lại trang. Không cần ADMIN_TOKEN, không mất dữ liệu.
+App kiểm tra khi mở trang, khi quay lại tab và mỗi 10 phút.
 
-## B. Sửa server.js hoặc Dockerfile — phải phát hành ảnh mới
-`./release.sh 1.1` → `git push && git push origin v1.1` → đợi GitHub Actions xanh →
-dán lại `solohost/docker-compose.yml` vào SoloHost (Edit app → Update app).
+## Người phát hành (bạn)
+1. Sửa code trong `public/` (index.html, login.html...), commit.
+2. Chạy `./release.sh 1.7 "Ghi chú ngắn"` (tạo version.json, public/update.json, commit và tag).
+3. `git push` rồi `git push origin v1.7`. Vài phút sau (GitHub có bộ nhớ đệm) các app sẽ hiện nút Cập nhật.
+
+Lưu ý:
+- Nút này chỉ cập nhật các file trong `public/` (giao diện). Nếu bạn sửa `server.js`, `Dockerfile` hoặc `docker-compose`,
+  phải đợi GitHub Actions build ảnh mới, dán lại `solohost/docker-compose.yml` trong SoloHost rồi gỡ và cài lại app
+  (gỡ app xóa dữ liệu trong volume).
+- Cần có Node trên máy phát hành để `release.sh` tạo `public/update.json`. Không có thì nút Cập nhật không báo bản mới.
+- App cần đặt `UPDATE_BASE` (đã có sẵn trong `solohost/docker-compose.yml`).
+- Quay lại bản trước (khi bản mới lỗi): vẫn dùng được trang `/admin.html` nếu bạn đặt `ADMIN_TOKEN` cho app.

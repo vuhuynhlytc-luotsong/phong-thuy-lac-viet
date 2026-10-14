@@ -83,6 +83,32 @@ async function downloadFiles(m) {
   if (!h.includes('<!--SERVER_DATA-->')) throw new Error('index.html thiếu dòng <!--SERVER_DATA-->, nếu cập nhật sẽ mất ghi chú theo tài khoản. Đã hủy.');
   return out;
 }
+async function applyUpdate() {      // tải bản mới từ GitHub, kiểm tra mã SHA-256, rồi chuyển sang dùng. Trả {code, body}
+  if (updBusy) return { code: 409, body: { ok: false, error: 'Đang cập nhật, vui lòng đợi' } };
+  updBusy = true;
+  try {
+    const cur = curVer(), m = await fetchManifest();
+    if (cmpVer(m.version, cur) <= 0) return { code: 409, body: { ok: false, error: 'Đang là bản mới nhất (' + cur + ')', to: cur } };
+    const files = await downloadFiles(m), dir = path.join(D_SITE, m.version);
+    fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
+    for (const [n, t] of Object.entries(files)) fs.writeFileSync(path.join(dir, n), t);
+    if (META.prev && META.prev !== META.cur) fs.rmSync(path.join(D_SITE, META.prev), { recursive: true, force: true });
+    const next = { cur: m.version, prev: META.cur || '', date: m.date };
+    writeJson(F_META, next); META = next; mCache = { t: 0, m: null };
+    return { code: 200, body: { ok: true, from: cur, to: m.version, files: Object.keys(files) } };
+  } catch (e) { return { code: 502, body: { ok: false, error: e.message } }; }
+  finally { updBusy = false; }
+}
+let updBusy = false, mCache = { t: 0, m: null };
+// Người dùng đã đăng nhập (không cần ADMIN_TOKEN) xem và bấm cập nhật từ GitHub
+async function userUpdate(res, p) {
+  if (p === '/api/update/status') {
+    if (Date.now() - mCache.t > 3e5) { try { mCache = { t: Date.now(), m: await fetchManifest() }; } catch (e) { mCache = { t: Date.now(), m: null }; } }
+    const cur = curVer(), m = mCache.m;
+    return json(res, 200, m ? { current: cur, remote: m.version, note: m.note, date: m.date, hasUpdate: cmpVer(m.version, cur) > 0 } : { current: cur, hasUpdate: false });
+  }
+  const r = await applyUpdate(); return json(res, r.code, r.body);
+}
 async function updateApi(res, p) {
   const cur = curVer();
   if (p === '/api/admin/update-status') {
@@ -90,19 +116,7 @@ async function updateApi(res, p) {
     try { const m = await fetchManifest(); Object.assign(o, { remote: m.version, note: m.note, date: m.date, hasUpdate: cmpVer(m.version, cur) > 0 }); } catch (e) { o.error = e.message; }
     return json(res, 200, o);
   }
-  if (p === '/api/admin/update') {
-    try {
-      const m = await fetchManifest();
-      if (cmpVer(m.version, cur) <= 0) return json(res, 409, { ok: false, error: 'Đang là bản mới nhất (' + cur + ')' });
-      const files = await downloadFiles(m), dir = path.join(D_SITE, m.version);
-      fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
-      for (const [n, t] of Object.entries(files)) fs.writeFileSync(path.join(dir, n), t);
-      if (META.prev && META.prev !== META.cur) fs.rmSync(path.join(D_SITE, META.prev), { recursive: true, force: true });
-      const next = { cur: m.version, prev: META.cur || '', date: m.date };
-      writeJson(F_META, next); META = next;
-      return json(res, 200, { ok: true, from: cur, to: m.version, files: Object.keys(files) });
-    } catch (e) { return json(res, 502, { ok: false, error: e.message }); }
-  }
+  if (p === '/api/admin/update') { const r = await applyUpdate(); return json(res, r.code, r.body); }
   if (p === '/api/admin/rollback') {
     if (!META.cur) return json(res, 409, { ok: false, error: 'Đang dùng bản đóng gói, không có bản trước để quay lại' });
     const old = META.cur, next = { cur: META.prev || '', prev: '', date: '' };
@@ -339,6 +353,12 @@ async function handle(req, res) {
 
   const a = authed(req);
 
+  if (p === '/api/update/status' || p === '/api/update/apply') {
+    if (!a) return json(res, 401, { error: 'login' });
+    if (p === '/api/update/apply' && req.method !== 'POST') return json(res, 405, { error: 'method' });
+    return userUpdate(res, p);
+  }
+
   if (p === '/api/data') {
     if (!a) return json(res, 401, { error: 'login' });
     if (req.method === 'GET') return json(res, 200, loadUser(a.k.key));
@@ -373,5 +393,5 @@ http.createServer((req, res) => {
   handle(req, res).catch(e => { console.error(e); if (!res.headersSent) json(res, 500, { error: 'server' }); else res.end(); });
 }).listen(PORT, () => {
   console.log('Phong Thuy Lac Viet v' + curVer() + ' chay o cong ' + PORT);
-  if (!ADMIN || ADMIN === PLACEHOLDER) console.warn('CANH BAO: ADMIN_TOKEN chua duoc dat (hoac con la gia tri mau). Chuc nang quan tri dang TAT.');
+  if (!LICENSE_URL && (!ADMIN || ADMIN === PLACEHOLDER)) console.warn('CANH BAO: ADMIN_TOKEN chua duoc dat (hoac con la gia tri mau). Chuc nang quan tri dang TAT.');
 });

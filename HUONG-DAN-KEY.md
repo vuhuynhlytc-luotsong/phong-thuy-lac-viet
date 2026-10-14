@@ -10,3 +10,7 @@
 # Hỏi đáp AI (Gemini)
 - Key Gemini CHỈ đặt ở Worker (secret GEMINI_API_KEY). Máy Pi/SoloHost gọi qua Worker, không cần key riêng.
 - Mỗi key người dùng tối đa 20 câu hỏi/ngày (đổi bằng biến ASK_LIMIT trên Worker). Model mặc định gemini-2.5-flash (đổi bằng biến GEMINI_MODEL nếu Google đổi tên model).
+
+## Cài trên SoloHost / Pi
+- Khi cài app KHÔNG cần điền ADMIN_TOKEN. Cài xong mở app là ra màn hình đăng nhập, nhập key 24 ký tự do Worker cấp.
+- Máy cài không tạo được key (chức năng quản trị tắt). Key chỉ tạo ở trang admin của Worker.

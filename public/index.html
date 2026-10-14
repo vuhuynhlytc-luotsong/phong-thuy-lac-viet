@@ -48,6 +48,7 @@ dt{color:var(--mute)}dd{margin:0}
 .frm label{display:flex;flex-direction:column;font-size:14px;color:var(--mute)}
 input[type=number]{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;width:130px}
 input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.tday{border:1px solid var(--pub);border-radius:12px;padding:10px 14px;margin:10px 0}.tday h3{margin:0 0 4px;font-size:16px;color:var(--red)}
 .pri{background:var(--pu);color:var(--puink);border-color:var(--pub);font-weight:600}
 .ok{color:var(--good)}.no{color:var(--bad);font-weight:600}
 .tw{overflow-x:auto;margin-top:10px}table{border-collapse:collapse;width:100%;font-size:15px}
@@ -74,7 +75,6 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
 <div id="acct" class="acct" hidden><span id="acctWho"></span><span id="acctSync" aria-live="polite"></span><button id="acctOut">Đăng xuất</button></div>
 <div id="appUpd" class="bn t" role="status" hidden></div>
 <div class="card t clk" id="clk"><b id="ck-t">--:--:--</b><span id="ck-d"></span><span id="ck-l"></span><span id="ck-s"></span></div>
-<section class="card t" id="dly" hidden aria-live="polite"></section>
 <div id="bn" class="bn t" role="status" hidden></div>
 <nav class="mn" id="mn" role="tablist" aria-label="Các mục chính">
  <button role="tab" data-p="nn">SỔ TAY ĐIỆN TỬ<small>Ngày quan trọng + giờ/ngày</small></button><button role="tab" data-p="pl">LỊCH ÂM DƯƠNG<small>Tra ngày tốt xấu</small></button><button role="tab" data-p="hop">CHỌN NGÀY TỐT<small>Cưới hỏi, khai trương, xuất hành...</small></button><button role="tab" data-p="tuoi">XEM TUỔI TỪNG NGƯỜI<small>Năm tốt hay xấu + hồ sơ gia đình</small></button><button role="tab" data-p="ai">HỎI ĐÁP AI<small>Hỏi về phong thủy</small></button>
@@ -206,13 +206,20 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
   const vb=$("appVer");vb.textContent="v"+V.version;
   vb.title="Phiên bản "+V.version+(V.released?" · phát hành "+V.released.split("-").reverse().join("/"):"");vb.hidden=false;
   let shown=0;
+  const banner=(txt,bt,fn)=>{const u=$("appUpd");u.textContent=txt+" ";if(bt){const b=document.createElement("button");b.textContent=bt;b.onclick=fn;u.appendChild(b)}u.hidden=false;return u};
   const chk=()=>{if(shown)return;
-   fetch("/api/version",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(n=>{
-    if(!n||!n.version||n.version===V.version)return;shown=1;
-    const u=$("appUpd"),b=document.createElement("button");
-    u.textContent="🔄 Đã có phiên bản mới v"+n.version+" (bạn đang dùng v"+V.version+"). ";
-    b.textContent="Tải lại để cập nhật";b.onclick=()=>flush().then(()=>location.reload());
-    u.appendChild(b);u.hidden=false}).catch(()=>{})};
+   fetch("/api/update/status",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(n=>{
+    if(!n)return;
+    if(n.current&&n.current!==V.version){shown=1;banner("🔄 Đã có phiên bản mới v"+n.current+" (bạn đang dùng v"+V.version+").","Tải lại để cập nhật",()=>flush().then(()=>location.reload()));return}
+    if(!n.hasUpdate)return;shown=1;
+    const u=banner("🔄 Có phiên bản mới v"+n.remote+(n.note?" – "+n.note:"")+" (bạn đang dùng v"+V.version+").","Cập nhật ngay",async function(){
+     this.disabled=true;this.textContent="Đang cập nhật…";
+     try{await flush();const r=await fetch("/api/update/apply",{method:"POST"}),j=await r.json().catch(()=>({}));
+      if(j.ok||r.status==409){u.textContent="✅ Đã cập nhật"+(j.to?" lên v"+j.to:"")+". Đang tải lại…";setTimeout(()=>location.reload(),800)}
+      else throw new Error(j.error||"lỗi máy chủ")}
+     catch(e){u.textContent="Không cập nhật được: "+e.message+" ";const b=document.createElement("button");b.textContent="Thử lại";b.onclick=()=>{shown=0;u.hidden=true;chk()};u.appendChild(b)}})
+   }).catch(()=>{})};
+  setTimeout(chk,1500);
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()});
   setInterval(chk,6e5);
  }
@@ -301,7 +308,7 @@ function tuoi(){const by=+$("by").value,ty=+$("ty").value,o=$("tout");
  const nha=!c.kl&&c.ho[1]&&c.tt<0,cuoi=!c.kl&&c.tt<0,an=!c.tb&&c.tt<0;
  let rows="";for(let i=0;i<6;i++){const y=ty+i,z=calc(by,y),p=[];if(z.kl)p.push("Kim Lâu");if(!z.ho[1])p.push("Hoang Ốc");if(z.tt>=0)p.push("Tam Tai");if(z.tb)p.push(z.tue.split(" (")[0]);
   rows+=`<tr><td>${y}</td><td>${yc(y)}</td><td>${z.age}</td><td>${p.join(", ")||"Không phạm"}</td><td><span class="badge ${yv(z)}" style="margin:0;padding:2px 10px">${YL[yv(z)].split(",")[0]}</span></td></tr>`}
- o.innerHTML=`<div class="lun" style="font-size:22px;font-weight:700;color:var(--red)">Tuổi ${yc(by)} (${mp})</div>${bx(by)}
+ o.innerHTML=`<div class="lun" style="font-size:22px;font-weight:700;color:var(--red)">Tuổi ${yc(by)} (${mp})</div>${bx(by)}${window.dayCard?window.dayCard(by):""}
  <div class="badge ${v}">Năm ${ty} (${yc(ty)}): ${YL[v]}</div>
  <dl><dt>Tuổi âm</dt><dd>${c.age} tuổi</dd>
  <dt>Kim Lâu</dt><dd>${yes(!c.kl,"Không phạm","Phạm Kim Lâu ("+c.kl+")")}</dd>
@@ -316,6 +323,7 @@ $("ty").value=solar2lunar(now.getDate(),M,Y)[2];try{$("by").value=ST.getItem("by
 $("bhr").innerHTML=bhOpt;$("ghr").innerHTML=bhOpt;try{$("bdt").value=ST.getItem("bd")||"";$("bhr").value=ST.getItem("bh")||""}catch(e){}
 $("bdt").onchange=()=>{const r=bInfo($("bdt").value,"");if(r&&r.ly)$("by").value=r.ly;bdSave();if($("by").value&&$("ty").value)tuoi();document.dispatchEvent(new Event("bdchg"))};
 $("bhr").onchange=()=>{bdSave();if($("by").value&&$("ty").value)tuoi();document.dispatchEvent(new Event("bdchg"))};
+document.addEventListener("bdchg",()=>{if($("by").value&&$("ty").value)tuoi()});
 $("xem").onclick=tuoi;[$("by"),$("ty")].forEach(e=>e.onkeydown=k=>{if(k.key==="Enter")tuoi()});
 if($("by").value)tuoi();
 render();
@@ -535,26 +543,22 @@ function luck(by,t){const f=info(t.getDate(),t.getMonth()+1,t.getFullYear()),m=h
  let lead,leadNote;
  if(SINH[dh]==m||dh==m){lead=dh;leadNote="Hợp với ngày hôm nay"}
  else if(KHAC[dh]==m){lead=Object.keys(SINH).find(x=>SINH[dh]==x&&SINH[x]==m);leadNote="Giúp hóa giải ngày khắc mệnh"}
- else{lead=parent(m);leadNote="Màu sinh cho mệnh bạn"}
+ else{lead=parent(m);leadNote="Màu sinh cho mệnh"}
  const col=[...new Set([...MAUHANH[lead],...MAUHANH[m]])],avoid=MAUHANH[killer(m)],nums=[...new Set([...SOHANH[lead],...SOHANH[m]])].map(n=>n==10?"0/10":n),avn=SOHANH[killer(m)].map(n=>n==10?"0/10":n);
  const hours=GH[f.chi%6].map(i=>CHI[i]+" ("+GT[i]+"h)");
  return{f,m,dh,sc,why,v:sc>=65?["tot","Hợp"]:sc>=45?["tb","Bình thường"]:["xau","Không hợp"],col,avoid,nums,avn,leadNote,lead,hours}}
-function dly(){const box=$("dly"),by=+(ST.getItem("by")||0),t=vnd();
- if(!(by>=1900&&by<=2150)){box.hidden=false;box.innerHTML=`<h2>HÔM NAY CỦA BẠN</h2><div class="note" style="margin:0">Nhập năm sinh của chủ tài khoản để mỗi ngày xem hôm nay hợp màu gì, số gì, ngày có hợp với bạn không.</div><div class="frm"><label>Năm sinh<input type="number" id="dyBy" min="1900" max="2150" placeholder="1990" inputmode="numeric"></label><label>Hoặc ngày sinh<input type="date" id="dyDt"></label><label>Giờ sinh (tùy chọn)<select id="dyHr">${bhOpt}</select></label><button class="pri" id="dyOk">Lưu</button></div>`;
-  const go=()=>{const dt=$("dyDt").value,bi=dt?bInfo(dt,""):null,v=bi&&bi.ly?bi.ly:+$("dyBy").value;if(v>=1900&&v<=2150){ST.setItem("by",v);ST.setItem("bd",dt);ST.setItem("bh",$("dyHr").value);$("by").value=v;$("bdt").value=dt;$("bhr").value=$("dyHr").value;dly()}};$("dyOk").onclick=go;$("dyBy").onkeydown=e=>{if(e.key=="Enter")go()};return}
- const L=luck(by,t),f=L.f;
- box.hidden=false;
- box.innerHTML=`<h2>HÔM NAY CỦA BẠN</h2><div class="lun">${fmw(t)} • âm lịch ${f.ld}/${f.lm} • ngày ${cc(f.can,f.chi)} (hành ${L.dh})</div>
- <div class="lun">Tuổi ${cc(cn(by),ch(by))} (${by}) • mệnh ${L.m} • <a href="#" id="dyChg">đổi năm sinh</a></div>${(()=>{const r=bInfo(ST.getItem("bd")||"",ST.getItem("bh")||"");return r&&(!r.ly||r.ly==by)?`<div class="lun">${r.txt}</div>`:""})()}
- <div class="badge ${L.v[0]}">Hôm nay ${L.v[1]} với bạn (${L.sc}/100)</div>
+function dayHtml(by,t){const L=luck(by,t),f=L.f;
+ return `<div class="tday"><h3>HÔM NAY CỦA NGƯỜI NÀY</h3><div class="lun">${fmw(t)} • âm lịch ${f.ld}/${f.lm} • ngày ${cc(f.can,f.chi)} (hành ${L.dh})</div>
+ <div class="badge ${L.v[0]}">Hôm nay ${L.v[1]} với tuổi này (${L.sc}/100)</div>
  <dl><dt>Màu hợp</dt><dd>${esc(L.col.join(", "))} <small>(${esc(L.leadNote)})</small></dd><dt>Màu nên tránh</dt><dd>${esc(L.avoid.join(", "))}</dd><dt>Số hợp</dt><dd>${L.nums.join(", ")}</dd><dt>Số nên tránh</dt><dd>${L.avn.join(", ")}</dd><dt>Giờ tốt</dt><dd>${esc(L.hours.join(", "))}</dd></dl>
  <details><summary>Vì sao?</summary><ul>${L.why.map(x=>"<li>"+esc(x)+"</li>").join("")}</ul></details>
- <div class="note" style="margin:6px 0 0">Chỉ mang tính tham khảo theo ngũ hành và can chi.</div>`;
- $("dyChg").onclick=e=>{e.preventDefault();ST.removeItem("by");ST.removeItem("bd");ST.removeItem("bh");$("bdt").value="";$("bhr").value="";dly()};
- try{if(window.Notification&&Notification.permission=="granted"&&rd("dlyN","")!==dstr(t)){wr("dlyN",dstr(t));new Notification("Hôm nay "+L.v[1]+" với bạn",{body:"Màu hợp: "+L.col.join(", ")+" • Số hợp: "+L.nums.join(", "),icon:"favicon.png"})}}catch(e){}}
-dly();let dlyD=dstr(vnd());setInterval(()=>{const n=dstr(vnd());if(n!==dlyD){dlyD=n;dly()}},6e4);
+ <div class="note" style="margin:6px 0 0">Chỉ mang tính tham khảo theo ngũ hành và can chi.</div></div>`}
+window.dayCard=by=>dayHtml(by,vnd());
+function dly(){const by=+(ST.getItem("by")||0),t=vnd();if(!(by>=1900&&by<=2150))return;   /* thông báo mỗi ngày cho năm sinh đã xem gần nhất */
+ try{if(window.Notification&&Notification.permission=="granted"&&rd("dlyN","")!==dstr(t)){const L=luck(by,t);wr("dlyN",dstr(t));new Notification("Hôm nay "+L.v[1]+" với bạn",{body:"Màu hợp: "+L.col.join(", ")+" • Số hợp: "+L.nums.join(", "),icon:"favicon.png"})}}catch(e){}}
+dly();let dlyD=dstr(vnd());setInterval(()=>{const n=dstr(vnd());if(n!==dlyD){dlyD=n;dly();document.dispatchEvent(new Event("bdchg"))}},6e4);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)dly()});document.addEventListener("bdchg",()=>dly());
-hform("cuoi");gdr();qtab("x");
+hform("cuoi");gdr();qtab("x");document.dispatchEvent(new Event("bdchg"));
 })();
 (function(){const log=$("aiLog"),q=$("aiQ"),go=$("aiGo"),H=[];let busy=0;
  const add=(c,t)=>{const d=document.createElement("div");d.textContent=t;d.style.cssText="padding:9px 12px;border-radius:10px;white-space:pre-wrap;"+(c=="u"?"background:var(--sel);align-self:flex-end;max-width:90%":"background:var(--card);border:1px solid var(--line);max-width:95%");log.appendChild(d);d.scrollIntoView({block:"nearest"});return d};
