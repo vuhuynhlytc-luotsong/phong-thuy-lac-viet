@@ -4,11 +4,11 @@
 .b{background:#fff;padding:28px;border-radius:14px;width:300px;text-align:center}input,button{width:100%;padding:11px;margin-top:10px;box-sizing:border-box;border-radius:8px;border:1px solid #bbb;font-size:1em}
 button{background:#d4a017;border:0;font-weight:700;cursor:pointer}#e{color:#c0392b;min-height:1.2em;margin-top:8px}.s{color:#666;font-size:.8em;margin:6px 0 0}</style></head>
 <body><div class="b"><img src="favicon.png" width="64" alt=""><h3>Phong Thủy Lạc Việt</h3>
-<input id="k" placeholder="Nhập mã key" autocomplete="off" autocapitalize="characters" spellcheck="false"><button id="g">Đăng nhập</button><div id="e" role="alert"></div>
+<input id="k" maxlength="40" placeholder="Nhập mã key" autocomplete="off" autocapitalize="characters" spellcheck="false"><button id="g">Đăng nhập</button><div id="e" role="alert"></div>
 <p class="s">Mỗi key chỉ dùng được trên một máy.</p><p class="s" id="v"></p></div>
 <script>
 const k=document.getElementById('k'),e=document.getElementById('e'),g=document.getElementById('g');
-const MSG={429:'Nhập sai quá nhiều lần, thử lại sau 1 phút.',403:'Key này đã được dùng trên máy khác. Liên hệ quản trị viên để chuyển sang máy này.',401:'Key không đúng hoặc đã hết hạn.'};
+const MSG={429:'Nhập sai quá nhiều lần, thử lại sau 1 phút.',403:'Key này đã được dùng trên máy khác. Liên hệ quản trị viên để chuyển sang máy này.',401:'Key không đúng hoặc đã hết hạn.',503:'Chưa kết nối được máy chủ cấp key. Kiểm tra mạng rồi thử lại.'};
 async function go(){e.textContent='';if(!k.value.trim()){e.textContent='Vui lòng nhập key.';return}g.disabled=true;
  try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k.value})});
   if(r.ok)location.href='/';else e.textContent=MSG[r.status]||'Có lỗi, vui lòng thử lại.'}

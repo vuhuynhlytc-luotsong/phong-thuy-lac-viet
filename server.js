@@ -143,6 +143,36 @@ const clientIp = r => {
   return r.socket.remoteAddress || '';
 };
 
+// ---------- chế độ có bản quyền: key do máy chủ chính (Cloudflare Worker) cấp ----------
+const LICENSE_URL = (process.env.LICENSE_URL || '').replace(/\/+$/, '');
+const RECHECK_MS = 36e5, GRACE_MS = 7 * 864e5;                  // hỏi lại máy chính mỗi 1 giờ; mất mạng thì cho dùng tối đa 7 ngày
+const F_INST = path.join(DIR, 'install.json');
+const INSTALL_ID = (() => {
+  if (!LICENSE_URL) return '';
+  const o = readJson(F_INST, {});
+  if (o && /^[a-f0-9]{32}$/.test(o.id)) return o.id;
+  const id = crypto.randomBytes(16).toString('hex'); writeJson(F_INST, { id }); return id;
+})();
+async function licenseCheck(key) {    // -> {st:'ok',name,expires} | {st:'invalid'} | {st:'device'} | {st:'offline'}
+  try {
+    const r = await fetch(LICENSE_URL + '/api/license/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, inst: INSTALL_ID }), signal: AbortSignal.timeout(10000) });
+    if (r.ok) { const o = await r.json(); return { st: 'ok', name: String(o.name || ''), expires: o.expires || null }; }
+    if (r.status === 403) return { st: 'device' };
+    if (r.status === 401 || r.status === 404) return { st: 'invalid' };
+    return { st: 'offline' };
+  } catch (e) { return { st: 'offline' }; }
+}
+const rechecking = new Set();
+function recheck(key) {               // chạy nền, không chặn người dùng
+  if (rechecking.has(key)) return; rechecking.add(key);
+  licenseCheck(key).then(c => {
+    if (c.st === 'offline') return;
+    const keys = loadKeys(), k = keys.find(x => x.key === key); if (!k) return;
+    if (c.st === 'ok') { k.active = true; k.name = c.name; k.expires = c.expires; k.checked = Date.now(); } else k.active = false;
+    saveKeys(keys);
+  }).catch(() => {}).finally(() => rechecking.delete(key));
+}
+
 // ---------- key ----------
 const loadKeys = () => { const k = readJson(F_KEYS, []); return Array.isArray(k) ? k : []; };
 const saveKeys = k => writeJson(F_KEYS, k);
@@ -162,6 +192,11 @@ const authed = r => {
   if (!s) return null;
   const k = loadKeys().find(x => x.key === s.key);
   if (!alive(k) || !k.device || k.device !== s.dh || Date.now() - s.t > SESSION_MS) { delete sess[h]; saveSess(); return null; }
+  if (LICENSE_URL) {
+    const age = Date.now() - (k.checked || 0);
+    if (age > GRACE_MS) { delete sess[h]; saveSess(); return null; }   // quá lâu không xác nhận được với máy chính
+    if (age > RECHECK_MS) recheck(k.key);
+  }
   return { k, h };
 };
 
@@ -190,6 +225,49 @@ function renderApp(html, k) {
   return html.replace('<!--SERVER_DATA-->', () => inj);   // dùng hàm để ký tự $ trong dữ liệu không bị hiểu nhầm
 }
 
+// ---------- hỏi đáp AI (Gemini) ----------
+const GEMINI_KEY = process.env.GEMINI_API_KEY || '', GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const ASK_LIMIT = +process.env.ASK_LIMIT || 20;                  // số câu hỏi / key / ngày (khi máy này tự giữ key Gemini)
+const SYS_PROMPT = 'Bạn là trợ lý phong thủy và lịch âm Việt Nam trong ứng dụng "Phong Thủy Lạc Việt". Trả lời bằng tiếng Việt, ngắn gọn (tối đa khoảng 200 từ), dễ hiểu. Đây là kiến thức truyền thống để tham khảo: không khẳng định chắc chắn, không đưa lời khuyên y tế, tài chính hay pháp lý. Chỉ trả lời về phong thủy, lịch âm, ngày giờ tốt xấu, tuổi hợp, hướng nhà, văn hóa tín ngưỡng Việt; chủ đề khác thì từ chối lịch sự. Thiếu thông tin (như năm sinh) thì hỏi lại.';
+const askCount = new Map();
+const cleanAsk = b => {
+  const q = String((b && b.q) || '').trim().slice(0, 500);
+  const h = (Array.isArray(b && b.h) ? b.h : []).slice(-6).filter(x => x && (x.r === 'u' || x.r === 'm') && typeof x.t === 'string').map(x => ({ r: x.r, t: x.t.slice(0, 2000) }));
+  return { q, h };
+};
+async function askGemini(q, h) {
+  const contents = [...h.map(x => ({ role: x.r === 'u' ? 'user' : 'model', parts: [{ text: x.t }] })), { role: 'user', parts: [{ text: q }] }];
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(GEMINI_MODEL) + ':generateContent', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_KEY }, signal: AbortSignal.timeout(30000),
+    body: JSON.stringify({ systemInstruction: { parts: [{ text: SYS_PROMPT }] }, contents, generationConfig: { maxOutputTokens: 1500, temperature: 0.7, ...(/2\.5-flash/.test(GEMINI_MODEL) ? { thinkingConfig: { thinkingBudget: 0 } } : {}) } })
+  });
+  if (r.status === 429) return { error: 'busy' };
+  if (!r.ok) { const e = await r.json().catch(() => ({})); return { error: 'fail', detail: 'Gemini trả mã ' + r.status + (e.error && e.error.message ? ': ' + String(e.error.message).slice(0, 160) : '') }; }
+  const j = await r.json().catch(() => ({}));
+  const t = ((((j.candidates || [])[0] || {}).content || {}).parts || []).map(x => x.text || '').join('').trim();
+  return t ? { answer: t } : { error: 'fail', detail: 'Gemini không trả nội dung' };
+}
+async function handleAsk(req, res, a) {
+  if (!a) return json(res, 401, { error: 'login' });
+  if (req.method !== 'POST') return json(res, 405, {});
+  const { q, h } = cleanAsk(await body(req, 2e4));
+  if (!q) return json(res, 400, { error: 'empty' });
+  try {
+    if (LICENSE_URL) {   // máy con: nhờ máy chủ chính (Worker) giữ key Gemini và đếm lượt
+      const r = await fetch(LICENSE_URL + '/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: a.k.key, inst: INSTALL_ID, q, h }), signal: AbortSignal.timeout(40000) });
+      const j = await r.json().catch(() => ({}));
+      return json(res, r.ok ? 200 : (r.status === 429 ? 429 : r.status === 401 || r.status === 403 ? 403 : 502), r.ok ? j : { error: j.error || 'fail', detail: j.detail });
+    }
+    if (!GEMINI_KEY) return json(res, 503, { error: 'off' });
+    const day = new Date().toISOString().slice(0, 10), ck = a.k.key + '|' + day, n = askCount.get(ck) || 0;
+    if (n >= ASK_LIMIT) return json(res, 429, { error: 'limit' });
+    askCount.set(ck, n + 1); if (askCount.size > 5000) askCount.clear();
+    const o = await askGemini(q, h);
+    if (o.error) askCount.set(ck, n);
+    return json(res, o.error ? (o.error === 'busy' ? 429 : 502) : 200, o);
+  } catch (e) { return json(res, 502, { error: 'fail' }); }
+}
+
 // ---------- xử lý yêu cầu ----------
 async function handle(req, res) {
   const p = new URL(req.url, 'http://x').pathname, ip = clientIp(req);
@@ -201,20 +279,32 @@ async function handle(req, res) {
     if (Date.now() - f.t > 6e4) { f.n = 0; f.t = Date.now(); }
     if (f.n >= 5) return json(res, 429, { error: 'too_many' });
     const key = String(((await body(req)) || {}).key || '').trim().toUpperCase();
-    const keys = loadKeys(), k = keys.find(x => x.key === key);
-    if (!alive(k)) { f.n++; fails.set(ip, f); return json(res, 401, { error: 'invalid' }); }
-
-    // Mã máy: cookie "did" ngẫu nhiên, lưu lâu dài trong trình duyệt của máy này
-    let did = cookie(req, 'did'); const newDid = !/^[a-f0-9]{48}$/.test(did);
-    if (newDid) did = crypto.randomBytes(24).toString('hex');
-    const dh = sha(did);
-    if (k.device && k.device !== dh) return json(res, 403, { error: 'device_locked' });   // key đã dùng ở máy khác
-    if (!k.device) { k.device = dh; k.boundAt = new Date().toISOString(); }                // lần đầu: khóa key vào máy này
+    let keys = loadKeys(), k = keys.find(x => x.key === key), did = '', dh = 'lic', newDid = false;
+    if (LICENSE_URL) {
+      if (!/^[0-9A-Z-]{12,40}$/.test(key)) { f.n++; fails.set(ip, f); return json(res, 401, { error: 'invalid' }); }
+      const c = await licenseCheck(key);
+      if (c.st === 'device') { f.n++; fails.set(ip, f); return json(res, 403, { error: 'device_locked' }); }
+      if (c.st === 'invalid') { f.n++; fails.set(ip, f); if (k) { k.active = false; saveKeys(keys); } return json(res, 401, { error: 'invalid' }); }
+      if (c.st === 'offline') {
+        if (!k || !alive(k) || Date.now() - (k.checked || 0) > GRACE_MS) return json(res, 503, { error: 'offline' });
+      } else {
+        if (!k) { k = { key }; keys.push(k); }
+        Object.assign(k, { name: c.name, expires: c.expires, active: true, device: 'lic', checked: Date.now() });
+      }
+    } else {
+      if (!alive(k)) { f.n++; fails.set(ip, f); return json(res, 401, { error: 'invalid' }); }
+      // Mã máy: cookie "did" ngẫu nhiên, lưu lâu dài trong trình duyệt của máy này
+      did = cookie(req, 'did'); newDid = !/^[a-f0-9]{48}$/.test(did);
+      if (newDid) did = crypto.randomBytes(24).toString('hex');
+      dh = sha(did);
+      if (k.device && k.device !== dh) return json(res, 403, { error: 'device_locked' });   // key đã dùng ở máy khác
+      if (!k.device) { k.device = dh; k.boundAt = new Date().toISOString(); }                // lần đầu: khóa key vào máy này
+    }
     k.lastLogin = new Date().toISOString(); saveKeys(keys);
 
     const id = crypto.randomBytes(24).toString('hex');
     sess[sha(id)] = { key: k.key, dh, t: Date.now() }; saveSess();
-    return json(res, 200, { ok: 1 }, { 'Set-Cookie': [setCk(req, 'sid', id, SESSION_MS / 1000), setCk(req, 'did', did, 315360000)] });
+    return json(res, 200, { ok: 1 }, { 'Set-Cookie': LICENSE_URL ? [setCk(req, 'sid', id, SESSION_MS / 1000)] : [setCk(req, 'sid', id, SESSION_MS / 1000), setCk(req, 'did', did, 315360000)] });
   }
 
   if (p === '/api/logout') {
@@ -231,6 +321,7 @@ async function handle(req, res) {
     if (p === '/api/admin/update-status' || p === '/api/admin/update' || p === '/api/admin/rollback') return updateApi(res, p);
     const keys = loadKeys(), b = req.method === 'POST' ? ((await body(req)) || {}) : {};
     const find = () => keys.find(x => x.key === String(b.key || '').trim().toUpperCase());
+    if (LICENSE_URL && /^\/api\/admin\/(list|create|revoke|restore|unbind)$/.test(p)) return json(res, 403, { error: 'licensed', hint: 'Key do máy chủ chính cấp và quản lý. Máy này không tạo được key.' });
     if (p === '/api/admin/list') return json(res, 200, keys.map(k => ({ key: k.key, name: k.name, expires: k.expires, active: k.active, bound: !!k.device, boundAt: k.boundAt || null, lastLogin: k.lastLogin || null })));
     if (p === '/api/admin/create') {
       const h = crypto.randomBytes(6).toString('hex').toUpperCase(), key = h.slice(0, 4) + '-' + h.slice(4, 8) + '-' + h.slice(8);
@@ -259,6 +350,7 @@ async function handle(req, res) {
     }
     return json(res, 405, {});
   }
+  if (p === '/api/ask') return handleAsk(req, res, a);
   if (p === '/api/me') return a ? json(res, 200, { name: a.k.name || '', expires: a.k.expires || null }) : json(res, 401, { error: 'login' });
 
   // ---------- file tĩnh ----------
