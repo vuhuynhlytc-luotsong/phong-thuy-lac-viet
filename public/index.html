@@ -72,7 +72,7 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
 .acct{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--mute)}.acct #acctSync{flex:1}.acct button{padding:4px 12px;font-size:14px}
 </style></head><body><main>
 <h1><img src="favicon.png" alt="" width="44" height="44">Phong Thủy Lạc Việt<span id="appVer" class="ver" hidden></span></h1>
-<div id="acct" class="acct" hidden><span id="acctWho"></span><span id="acctSync" aria-live="polite"></span><button id="acctOut">Đăng xuất</button></div>
+<div id="acct" class="acct" hidden><span id="acctWho"></span><span id="acctSync" aria-live="polite"></span><button id="acctUpd">Kiểm tra cập nhật</button><button id="acctOut">Đăng xuất</button></div>
 <div id="appUpd" class="bn t" role="status" hidden></div>
 <div class="card t clk" id="clk"><b id="ck-t">--:--:--</b><span id="ck-d"></span><span id="ck-l"></span><span id="ck-s"></span></div>
 <div id="bn" class="bn t" role="status" hidden></div>
@@ -220,6 +220,12 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
      catch(e){u.textContent="Không cập nhật được: "+e.message+" ";const b=document.createElement("button");b.textContent="Thử lại";b.onclick=()=>{shown=0;u.hidden=true;chk()};u.appendChild(b)}})
    }).catch(()=>{})};
   setTimeout(chk,1500);
+  $("acctUpd").onclick=()=>{const b=$("acctUpd");b.disabled=true;b.textContent="Đang kiểm tra…";
+   fetch("/api/update/status?force=1",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject(new Error("HTTP "+r.status))).then(n=>{
+    if(n.error)banner("⚠️ Không kiểm tra được cập nhật: "+n.error);
+    else if((n.current&&n.current!==V.version)||n.hasUpdate){shown=0;chk()}
+    else{banner("✅ Đang dùng bản mới nhất (v"+V.version+").");setTimeout(()=>{$("appUpd").hidden=true},6000)}
+   }).catch(e=>banner("⚠️ Không kiểm tra được: "+e.message)).finally(()=>{b.disabled=false;b.textContent="Kiểm tra cập nhật"})};
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()});
   setInterval(chk,6e5);
  }

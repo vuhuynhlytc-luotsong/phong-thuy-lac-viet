@@ -94,18 +94,18 @@ async function applyUpdate() {      // tải bản mới từ GitHub, kiểm tra
     for (const [n, t] of Object.entries(files)) fs.writeFileSync(path.join(dir, n), t);
     if (META.prev && META.prev !== META.cur) fs.rmSync(path.join(D_SITE, META.prev), { recursive: true, force: true });
     const next = { cur: m.version, prev: META.cur || '', date: m.date };
-    writeJson(F_META, next); META = next; mCache = { t: 0, m: null };
+    writeJson(F_META, next); META = next; mCache = { t: 0, m: null, e: '' };
     return { code: 200, body: { ok: true, from: cur, to: m.version, files: Object.keys(files) } };
   } catch (e) { return { code: 502, body: { ok: false, error: e.message } }; }
   finally { updBusy = false; }
 }
-let updBusy = false, mCache = { t: 0, m: null };
+let updBusy = false, mCache = { t: 0, m: null, e: '' };
 // Người dùng đã đăng nhập (không cần ADMIN_TOKEN) xem và bấm cập nhật từ GitHub
-async function userUpdate(res, p) {
+async function userUpdate(res, p, force) {
   if (p === '/api/update/status') {
-    if (Date.now() - mCache.t > 3e5) { try { mCache = { t: Date.now(), m: await fetchManifest() }; } catch (e) { mCache = { t: Date.now(), m: null }; } }
+    if (force || Date.now() - mCache.t > 3e5) { try { mCache = { t: Date.now(), m: await fetchManifest(), e: '' }; } catch (e) { mCache = { t: Date.now(), m: null, e: e.message }; } }
     const cur = curVer(), m = mCache.m;
-    return json(res, 200, m ? { current: cur, remote: m.version, note: m.note, date: m.date, hasUpdate: cmpVer(m.version, cur) > 0 } : { current: cur, hasUpdate: false });
+    return json(res, 200, m ? { current: cur, remote: m.version, note: m.note, date: m.date, hasUpdate: cmpVer(m.version, cur) > 0 } : { current: cur, hasUpdate: false, error: mCache.e || 'Chưa kiểm tra được' });
   }
   const r = await applyUpdate(); return json(res, r.code, r.body);
 }
@@ -356,7 +356,7 @@ async function handle(req, res) {
   if (p === '/api/update/status' || p === '/api/update/apply') {
     if (!a) return json(res, 401, { error: 'login' });
     if (p === '/api/update/apply' && req.method !== 'POST') return json(res, 405, { error: 'method' });
-    return userUpdate(res, p);
+    return userUpdate(res, p, /[?&]force=1\b/.test(req.url));
   }
 
   if (p === '/api/data') {
