@@ -1,7 +1,7 @@
 services:
   app:
     # THAY "TEN_GITHUB_CUA_BAN" bằng tên tài khoản GitHub (viết thường). Số phiên bản do ./release.sh tự cập nhật.
-    image: ghcr.io/vuhuynhlytc-luotsong/phong-thuy-lac-viet:1.7
+    image: ghcr.io/vuhuynhlytc-luotsong/phong-thuy-lac-viet:1.0
     restart: unless-stopped
     labels:
       pi.ui.primary: "true"

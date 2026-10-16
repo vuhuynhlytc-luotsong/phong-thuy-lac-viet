@@ -10,7 +10,7 @@
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:400 17px/1.5 system-ui,"Segoe UI",Roboto,Arial,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
 main{max-width:980px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1.25fr 1fr;gap:16px}
-h1{grid-column:1/-1;margin:0;font-size:26px;color:var(--red);display:flex;align-items:center;gap:12px}
+h1{grid-column:1/-1;margin:0;font-size:26px;color:var(--ink);display:flex;align-items:center;gap:12px}
 h1 img{width:44px;height:44px;border-radius:10px;flex:none}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
 .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
@@ -35,7 +35,7 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-
 .leg span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:var(--mid)}
 .leg .g::before{background:var(--good)}.leg .b::before{background:var(--bad)}.leg .h::before{border-radius:0;transform:rotate(45deg) scale(.8);background:var(--gold)}
 #d h2{margin:0;font-size:20px}
-#d .lun{font-size:24px;font-weight:700;color:var(--red);margin:2px 0 8px}
+#d .lun{font-size:24px;font-weight:700;color:var(--ink);margin:2px 0 8px}
 .badge{display:inline-block;padding:4px 12px;border-radius:99px;font-weight:700;margin:4px 0 10px}
 .badge.tot{background:var(--goodbg);color:var(--good)}.badge.xau{background:var(--badbg);color:var(--bad)}.badge.tb{background:var(--line);color:var(--ink)}
 dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
@@ -43,19 +43,19 @@ dt{color:var(--mute)}dd{margin:0}
 .hrs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
 .hrs span{background:var(--goodbg);color:var(--good);border-radius:6px;padding:2px 8px;font-size:15px}
 .note{font-size:13px;color:var(--mute);margin-top:10px}
-.t{grid-column:1/-1}.t h2{margin:0 0 4px;font-size:20px;color:var(--red)}
+.t{grid-column:1/-1}.t h2{margin:0 0 4px;font-size:20px;color:var(--ink)}
 .frm{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:10px 0}
 .frm label{display:flex;flex-direction:column;font-size:14px;color:var(--mute)}
 input[type=number]{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;width:130px}
 input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-.tday{border:1px solid var(--pub);border-radius:12px;padding:10px 14px;margin:10px 0}.tday h3{margin:0 0 4px;font-size:16px;color:var(--red)}
+.tday{border:1px solid var(--pub);border-radius:12px;padding:10px 14px;margin:10px 0}.tday h3{margin:0 0 4px;font-size:16px;color:var(--ink)}
 .pri{background:var(--pu);color:var(--puink);border-color:var(--pub);font-weight:600}
 .ok{color:var(--good)}.no{color:var(--bad);font-weight:600}
 .tw{overflow-x:auto;margin-top:10px}table{border-collapse:collapse;width:100%;font-size:15px}
 th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap}th{color:var(--mute);font-weight:600}
 input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;width:220px}
 .tabs{display:flex;gap:8px;margin:8px 0}.tabs .on{background:var(--pu);color:var(--puink);border-color:var(--pub)}
-.hd{font-size:22px;font-weight:700;color:var(--red);margin:8px 0 2px}
+.hd{font-size:22px;font-weight:700;color:var(--ink);margin:8px 0 2px}
 .bn{background:var(--sel);border:1px solid var(--gold);border-radius:12px;padding:10px 14px}.bn div{margin:2px 0}.bn button{padding:2px 10px;margin-left:8px}
 .nl{list-style:none;margin:10px 0 0;padding:0}.nl li{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:8px 0}.nl small{color:var(--mute)}.nl button{padding:4px 12px;color:var(--bad)}
 [hidden]{display:none!important}
@@ -65,7 +65,7 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 .tabs{flex-wrap:wrap}
 .clk{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:4px 18px;text-align:center}
-.clk b{font-size:36px;font-variant-numeric:tabular-nums;color:var(--red);letter-spacing:1px}.clk span{color:var(--mute)}
+.clk b{font-size:36px;font-variant-numeric:tabular-nums;color:var(--ink);letter-spacing:1px}.clk span{color:var(--mute)}
 .mn small{display:block;font-weight:400;font-size:12px;opacity:.85}
 .rs{list-style:none;margin:8px 0;padding:0}.rs li{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:6px 0}.rs button{padding:2px 10px;margin-left:6px}
 .ver{font-size:13px;font-weight:600;color:var(--mute);border:1px solid var(--line);border-radius:99px;padding:2px 10px;background:var(--card);align-self:center}
@@ -308,7 +308,7 @@ function tuoi(){const by=+$("by").value,ty=+$("ty").value,o=$("tout");
  const nha=!c.kl&&c.ho[1]&&c.tt<0,cuoi=!c.kl&&c.tt<0,an=!c.tb&&c.tt<0;
  let rows="";for(let i=0;i<6;i++){const y=ty+i,z=calc(by,y),p=[];if(z.kl)p.push("Kim Lâu");if(!z.ho[1])p.push("Hoang Ốc");if(z.tt>=0)p.push("Tam Tai");if(z.tb)p.push(z.tue.split(" (")[0]);
   rows+=`<tr><td>${y}</td><td>${yc(y)}</td><td>${z.age}</td><td>${p.join(", ")||"Không phạm"}</td><td><span class="badge ${yv(z)}" style="margin:0;padding:2px 10px">${YL[yv(z)].split(",")[0]}</span></td></tr>`}
- o.innerHTML=`<div class="lun" style="font-size:22px;font-weight:700;color:var(--red)">Tuổi ${yc(by)} (${mp})</div>${bx(by)}${window.dayCard?window.dayCard(by):""}
+ o.innerHTML=`<div class="lun" style="font-size:22px;font-weight:700;color:var(--ink)">Tuổi ${yc(by)} (${mp})</div>${bx(by)}${window.dayCard?window.dayCard(by):""}
  <div class="badge ${v}">Năm ${ty} (${yc(ty)}): ${YL[v]}</div>
  <dl><dt>Tuổi âm</dt><dd>${c.age} tuổi</dd>
  <dt>Kim Lâu</dt><dd>${yes(!c.kl,"Không phạm","Phạm Kim Lâu ("+c.kl+")")}</dd>

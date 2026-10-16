@@ -78,4 +78,3 @@ Pi Desktop chạy mỗi app trong container cách ly, gắn cổng vào `127.0.0
    `ADMIN_TOKEN=... APP_URL=http://127.0.0.1:18480 ./create-key.sh create "Tên"`
 4. Chưa kiểm chứng việc Pi Desktop có giữ nguyên volume khi bạn dán lại compose với số phiên bản mới.
    Hãy thử cập nhật với dữ liệu thật trước khi phát hành cho người dùng.
-5. Ô cấu hình trong `config_options.yml` chỉ dùng các khóa có trong tài liệu `SOLOHOST.md`. Nếu bộ kiểm tra yêu cầu thêm khóa (ví dụ `label`), hãy thêm theo thông báo lỗi.

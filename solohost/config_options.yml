@@ -3,8 +3,4 @@ eyebrow: "Ứng dụng SoloHost"
 description: "Lịch âm dương, sổ tay điện tử, xem tuổi hợp và xem tuổi từng người. Dữ liệu lưu riêng trên máy của bạn."
 output_file: ".env"
 after_save: "Đã cài xong. Mở thẻ ứng dụng và đăng nhập bằng key của bạn."
-fields:
-  - name: ADMIN_TOKEN
-    type: password
-    help: "Chuỗi bí mật dài (từ 24 ký tự) dùng để tạo và quản lý key đăng nhập. Để trống thì không tạo được key mới."
-    preserve_if_blank: true
+fields: []
