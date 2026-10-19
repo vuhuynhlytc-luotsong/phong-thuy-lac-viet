@@ -2,5 +2,5 @@ title: "Phong Thủy Lạc Việt"
 eyebrow: "Ứng dụng SoloHost"
 description: "Lịch âm dương, sổ tay điện tử, xem tuổi hợp và xem tuổi từng người. Dữ liệu lưu riêng trên máy của bạn."
 output_file: ".env"
-after_save: "Đã cài xong. Mở thẻ ứng dụng và đăng nhập bằng key của bạn."
+after_save: "Đã cài xong. Mở thẻ ứng dụng để dùng, không cần đăng nhập."
 fields: []

@@ -72,7 +72,7 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
 .acct{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--mute)}.acct #acctSync{flex:1}.acct button{padding:4px 12px;font-size:14px}
 </style></head><body><main>
 <h1><img src="favicon.png" alt="" width="44" height="44">Phong Thủy Lạc Việt<span id="appVer" class="ver" hidden></span></h1>
-<div id="acct" class="acct" hidden><span id="acctWho"></span><span id="acctSync" aria-live="polite"></span><button id="acctUpd">Kiểm tra cập nhật</button><button id="acctOut">Đăng xuất</button></div>
+<div id="acct" class="acct" hidden><span id="acctSync" aria-live="polite"></span><button id="acctUpd">Kiểm tra cập nhật</button></div>
 <div id="appUpd" class="bn t" role="status" hidden></div>
 <div class="card t clk" id="clk"><b id="ck-t">--:--:--</b><span id="ck-d"></span><span id="ck-l"></span><span id="ck-s"></span></div>
 <div id="bn" class="bn t" role="status" hidden></div>
@@ -177,7 +177,7 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
  if(!ME||!DB){try{window.ST=window.localStorage}catch(e){window.ST={getItem:()=>null,setItem(){},removeItem(){}}}return}
  const mem=Object.assign({},DB),dirty=new Set(),$=id=>document.getElementById(id);let timer=0,dead=0;
  const status=t=>{$("acctSync").textContent=t};
- function expired(){dead=1;status("Phiên đăng nhập đã hết hạn, đang chuyển về trang đăng nhập…");setTimeout(()=>{location.href="/"},1500)}
+ function expired(){dead=1;status("Không lưu được trên máy chủ, hãy tải lại trang")}
  function flush(keep){
   clearTimeout(timer);if(dead||!dirty.size)return Promise.resolve();
   const set={},ks=[...dirty];ks.forEach(k=>set[k]=mem[k]);dirty.clear();status("Đang lưu…");
@@ -196,9 +196,8 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
   if(!Object.keys(mem).length&&old.length){old.forEach(k=>{mem[k]=localStorage.getItem(k);dirty.add(k)});
    flush().then(ok=>{if(ok)old.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}})})}
  }catch(e){}
- /* Thanh tài khoản */
+ /* Thanh trạng thái lưu */
  const fm=d=>{const x=new Date(d);return String(x.getUTCDate()).padStart(2,"0")+"/"+String(x.getUTCMonth()+1).padStart(2,"0")+"/"+x.getUTCFullYear()};
- $("acctWho").textContent="Tài khoản: "+(ME.name||"Khách")+" · "+(ME.expires?"dùng đến "+fm(ME.expires):"không giới hạn thời gian");
  $("acct").hidden=false;
  /* Phiên bản + báo khi server đã cập nhật bản mới */
  const V=window.__VER;
@@ -229,7 +228,6 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()});
   setInterval(chk,6e5);
  }
- $("acctOut").onclick=()=>flush().then(()=>fetch("/api/logout",{method:"POST"})).then(()=>{location.href="/"});
  document.addEventListener("visibilitychange",()=>{if(document.hidden)flush(true)});
  window.addEventListener("pagehide",()=>flush(true));
 })();

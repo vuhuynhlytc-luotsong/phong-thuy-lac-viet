@@ -7,8 +7,9 @@ services:
     ports:
       - "127.0.0.1:8080:3000"
     environment:
-      - ADMIN_TOKEN=${ADMIN_TOKEN:?Hãy đặt ADMIN_TOKEN trong file .env}
-      - TRUST_PROXY=${TRUST_PROXY:-0}     # đặt 1 nếu chạy sau nginx / Cloudflare
+      # Địa chỉ Worker giữ key Gemini cho chức năng hỏi đáp AI (bỏ trống thì tắt AI, hoặc đặt GEMINI_API_KEY)
+      - AI_URL=${AI_URL:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     volumes:
-      - ./data:/app/data                  # key, phiên đăng nhập và sổ tay của mọi tài khoản
+      - ./data:/app/data                  # sổ tay của bạn
     restart: unless-stopped

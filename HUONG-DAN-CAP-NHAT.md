@@ -2,11 +2,11 @@
 
 ## Người dùng
 Khi trên GitHub có phiên bản mới, đầu trang app hiện dòng: "Có phiên bản mới vX ... [Cập nhật ngay]".
-Bấm nút, app tự tải bản mới (có kiểm tra mã SHA-256) rồi tải lại trang. Không cần ADMIN_TOKEN, không mất dữ liệu.
+Bấm nút, app tự tải bản mới (có kiểm tra mã SHA-256) rồi tải lại trang. Không cần mật khẩu, không mất dữ liệu.
 App kiểm tra khi mở trang, khi quay lại tab và mỗi 10 phút.
 
 ## Người phát hành (bạn)
-1. Sửa code trong `public/` (index.html, login.html...), commit.
+1. Sửa code trong `public/` (index.html...), commit.
 2. Chạy `./release.sh 1.7 "Ghi chú ngắn"` (tạo version.json, public/update.json, commit và tag).
 3. `git push` rồi `git push origin v1.7`. Vài phút sau (GitHub có bộ nhớ đệm) các app sẽ hiện nút Cập nhật.
 
@@ -16,4 +16,4 @@ Lưu ý:
   (gỡ app xóa dữ liệu trong volume).
 - Cần có Node trên máy phát hành để `release.sh` tạo `public/update.json`. Không có thì nút Cập nhật không báo bản mới.
 - App cần đặt `UPDATE_BASE` (đã có sẵn trong `solohost/docker-compose.yml`).
-- Quay lại bản trước (khi bản mới lỗi): vẫn dùng được trang `/admin.html` nếu bạn đặt `ADMIN_TOKEN` cho app.
+- Nếu bản mới lỗi: gỡ cài đặt rồi cài lại ảnh Docker cũ.
