@@ -1,10 +1,9 @@
 {
-  "version": "2.1",
-  "note": "bo key dang nhap",
-  "date": "2026-10-19",
+  "version": "2.3",
+  "note": "Giao dien moi tim vang",
+  "date": "2026-10-21",
   "files": {
-    "index.html": "257c7b82a30d249563b34e95ca509bc0274dbcfef2bf070498289ce30c007e56",
-    "login.html": "834d6cd48eea4cb09dd51551470fd011f0f427ef0af4560e76d9d740dd909d3f",
+    "index.html": "4f144b0691d81ce809cf151159e9ede62d9e349262c8e03d709d228f8da67f98",
     "version.json": "af770623dd28c5897edf781f6a4a3d18814ac5b4c4137f4eaaa408e5a9651ae0"
   }
 }
