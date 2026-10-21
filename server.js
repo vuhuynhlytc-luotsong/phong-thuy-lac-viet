@@ -53,7 +53,7 @@ const norm = t => t.replace(/\r\n/g, '\n');
 const sha256 = t => crypto.createHash('sha256').update(t, 'utf8').digest('hex');
 async function ghGet(url) {
   const r = await fetch(url + '?t=' + Date.now(), { headers: { 'Cache-Control': 'no-cache' }, signal: AbortSignal.timeout(15000) });
-  if (!r.ok) throw new Error('Không tải được ' + url.split('/').pop() + ' (HTTP ' + r.status + ')');
+  if (!r.ok) throw new Error('Không tải được ' + url + ' (HTTP ' + r.status + ')');
   return r.text();
 }
 async function fetchManifest() {
@@ -156,7 +156,7 @@ function renderApp(html) {
 }
 
 // ---------- hỏi đáp AI (Gemini) ----------
-const GEMINI_KEY = process.env.GEMINI_API_KEY || '', GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_KEY = process.env.GEMINI_API_KEY || '', GEMINI_MODEL = process.env.GEMINI_MODEL || '';
 const ASK_LIMIT = +process.env.ASK_LIMIT || 20;                  // số câu hỏi / key / ngày (khi máy này tự giữ key Gemini)
 const SYS_PROMPT = 'Bạn là trợ lý phong thủy và lịch âm Việt Nam trong ứng dụng "Phong Thủy Lạc Việt". Trả lời bằng tiếng Việt, ngắn gọn (tối đa khoảng 200 từ), dễ hiểu. Đây là kiến thức truyền thống để tham khảo: không khẳng định chắc chắn, không đưa lời khuyên y tế, tài chính hay pháp lý. Chỉ trả lời về phong thủy, lịch âm, ngày giờ tốt xấu, tuổi hợp, hướng nhà, văn hóa tín ngưỡng Việt; chủ đề khác thì từ chối lịch sự. Thiếu thông tin (như năm sinh) thì hỏi lại.';
 const askCount = new Map();
@@ -167,10 +167,22 @@ const cleanAsk = b => {
 };
 async function askGemini(q, h) {
   const contents = [...h.map(x => ({ role: x.r === 'u' ? 'user' : 'model', parts: [{ text: x.t }] })), { role: 'user', parts: [{ text: q }] }];
-  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(GEMINI_MODEL) + ':generateContent', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_KEY }, signal: AbortSignal.timeout(30000),
-    body: JSON.stringify({ systemInstruction: { parts: [{ text: SYS_PROMPT }] }, contents, generationConfig: { maxOutputTokens: 1500, temperature: 0.7, ...(/2\.5-flash/.test(GEMINI_MODEL) ? { thinkingConfig: { thinkingBudget: 0 } } : {}) } })
+  // Thử lần lượt các model; gặp lỗi tạm (500/503/504) thì thử lại 1 lần, gặp 429 (hết hạn mức) hoặc 404 thì chuyển model kế tiếp
+  const models = [...new Set([process.env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-flash-lite-latest'].filter(Boolean))];
+  const call = m => fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(m) + ':generateContent', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_KEY }, signal: AbortSignal.timeout(25000),
+    body: JSON.stringify({ systemInstruction: { parts: [{ text: SYS_PROMPT }] }, contents, generationConfig: { maxOutputTokens: 1500, temperature: 0.7, ...(/2\.5-flash/.test(m) ? { thinkingConfig: { thinkingBudget: 0 } } : {}) } })
   });
+  let r = null;
+  for (const m of models) {
+    for (let i = 0; i < 2; i++) {
+      try { r = await call(m); } catch (e) { r = null; }
+      if (r && (r.ok || ![500, 503, 504].includes(r.status))) break;
+      if (i === 0) await new Promise(ok => setTimeout(ok, 700));
+    }
+    if (r && (r.ok || [400, 401, 403].includes(r.status))) break;
+  }
+  if (!r) return { error: 'fail', detail: 'Không kết nối được tới Gemini' };
   if (r.status === 429) return { error: 'busy' };
   if (!r.ok) { const e = await r.json().catch(() => ({})); return { error: 'fail', detail: 'Gemini trả mã ' + r.status + (e.error && e.error.message ? ': ' + String(e.error.message).slice(0, 160) : '') }; }
   const j = await r.json().catch(() => ({}));
@@ -183,7 +195,7 @@ async function handleAsk(req, res) {
   if (!q) return json(res, 400, { error: 'empty' });
   try {
     if (AI_URL) {   // nhờ máy chủ chính (Worker) giữ key Gemini và đếm lượt
-      const r = await fetch(AI_URL + '/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ inst: INSTALL_ID, q, h }), signal: AbortSignal.timeout(40000) });
+      const r = await fetch(AI_URL + '/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ inst: INSTALL_ID, q, h }), signal: AbortSignal.timeout(70000) });
       const j = await r.json().catch(() => ({}));
       return json(res, r.ok ? 200 : (r.status === 429 ? 429 : 502), r.ok ? j : { error: j.error || 'fail', detail: j.detail });
     }

@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Phong Thủy Lạc Việt</title>
 <style>
-:root{--bg:#f2f2f0;--card:#fff;--ink:#241b1b;--mute:#6b6060;--line:#ddd6d3;--red:#b3202f;--gold:#9a6b00;--good:#1b7a3d;--goodbg:#dff2e5;--bad:#a3162a;--badbg:#f8dfe2;--mid:#8a7a5a;--sel:#fff3d1;--pu:#cdb8f0;--puink:#2d1b4e;--pub:#a98bd8}
+:root{--bg:#f6f1e7;--card:#fff;--ink:#241b1b;--mute:#6b6060;--line:#e3d9f3;--red:#b3202f;--gold:#b8851a;--good:#1b7a3d;--goodbg:#dff2e5;--bad:#a3162a;--badbg:#f8dfe2;--mid:#8a7a5a;--sel:#fff3d1;--pu:#cdb8f0;--puink:#2d1b4e;--pub:#a98bd8}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171313;--card:#221c1c;--ink:#f1e9e7;--mute:#a89b98;--line:#3a3030;--red:#ff7b87;--gold:#e0b04a;--good:#58d08a;--goodbg:#173a25;--bad:#ff8592;--badbg:#44181e;--mid:#c9b88a;--sel:#4a3a12;--pu:#6a56a0;--puink:#fff;--pub:#8a75c4}}
 :root[data-theme="dark"]{--bg:#171313;--card:#221c1c;--ink:#f1e9e7;--mute:#a89b98;--line:#3a3030;--red:#ff7b87;--gold:#e0b04a;--good:#58d08a;--goodbg:#173a25;--bad:#ff8592;--badbg:#44181e;--mid:#c9b88a;--sel:#4a3a12;--pu:#6a56a0;--puink:#fff;--pub:#8a75c4}
 *{box-sizing:border-box}
@@ -70,6 +70,22 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
 .rs{list-style:none;margin:8px 0;padding:0}.rs li{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:6px 0}.rs button{padding:2px 10px;margin-left:6px}
 .ver{font-size:13px;font-weight:600;color:var(--mute);border:1px solid var(--line);border-radius:99px;padding:2px 10px;background:var(--card);align-self:center}
 .acct{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--mute)}.acct #acctSync{flex:1}.acct button{padding:4px 12px;font-size:14px}
+
+/* ===== Giao diện A: tím hoàng gia + vàng ===== */
+h1{color:#3b1f6e}
+.card{box-shadow:0 3px 10px rgba(59,31,110,.08)}
+.clk{background:linear-gradient(135deg,#3b1f6e,#6a3fc4);border-color:#3b1f6e;box-shadow:0 6px 16px rgba(59,31,110,.35)}
+.clk b{color:#ffd76a;font-size:40px}.clk span{color:#efe6ff}
+.mn{gap:8px}.mn button{background:#fff;border:1px solid #e3d9f3;color:#3b1f6e;border-radius:14px;padding:10px 4px}
+.mn button i{display:block;font-style:normal;font-size:24px;line-height:1.2;margin-bottom:2px}
+.mn button.on,.mn .on{background:linear-gradient(160deg,#6a3fc4,#3b1f6e);color:#fff;border-color:#d4a72c;box-shadow:0 5px 12px rgba(59,31,110,.4),0 0 0 2px #d4a72c}
+.tabs .on{background:linear-gradient(160deg,#6a3fc4,#3b1f6e);color:#fff;border-color:#d4a72c;box-shadow:0 0 0 2px #d4a72c}
+.pri{background:linear-gradient(160deg,#e0b43a,#c8921a);color:#2a1a00;border-color:#b8851a;font-weight:700}
+.t h2{color:#3b1f6e}
+.tday{border-color:#d4a72c}
+.bn{background:#fff7dc}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .mn button{background:#201240;border-color:#3a2570;color:#d9c9ff}:root:not([data-theme="light"]) h1,:root:not([data-theme="light"]) .t h2{color:#ffd76a}}
+@media(max-width:760px){.mn button i{font-size:20px}.clk b{font-size:34px}}
 </style></head><body><main>
 <h1><img src="favicon.png" alt="" width="44" height="44">Phong Thủy Lạc Việt<span id="appVer" class="ver" hidden></span></h1>
 <div id="acct" class="acct" hidden><span id="acctSync" aria-live="polite"></span><button id="acctUpd">Kiểm tra cập nhật</button></div>
@@ -77,14 +93,14 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
 <div class="card t clk" id="clk"><b id="ck-t">--:--:--</b><span id="ck-d"></span><span id="ck-l"></span><span id="ck-s"></span></div>
 <div id="bn" class="bn t" role="status" hidden></div>
 <nav class="mn" id="mn" role="tablist" aria-label="Các mục chính">
- <button role="tab" data-p="nn">SỔ TAY ĐIỆN TỬ<small>Ngày quan trọng + giờ/ngày</small></button><button role="tab" data-p="pl">LỊCH ÂM DƯƠNG<small>Tra ngày tốt xấu</small></button><button role="tab" data-p="hop">CHỌN NGÀY TỐT<small>Cưới hỏi, khai trương, xuất hành...</small></button><button role="tab" data-p="tuoi">XEM TUỔI TỪNG NGƯỜI<small>Năm tốt hay xấu + hồ sơ gia đình</small></button><button role="tab" data-p="ai">HỎI ĐÁP AI<small>Hỏi về phong thủy</small></button>
+ <button role="tab" data-p="nn"><i>📒</i>Sổ tay<small>Ngày quan trọng</small></button><button role="tab" data-p="pl"><i>📅</i>Lịch<small>Âm dương</small></button><button role="tab" data-p="hop"><i>🍀</i>Ngày tốt<small>Cưới, khai trương</small></button><button role="tab" data-p="tuoi"><i>🔮</i>Xem tuổi<small>Từng người</small></button><button role="tab" data-p="ai"><i>🤖</i>Hỏi AI<small>Phong thủy</small></button>
 </nav>
 <section class="card t" id="nn">
- <h2>SỔ TAY ĐIỆN TỬ</h2>
+ <h2>📒 Sổ tay</h2>
  <div class="tabs"><button class="on" data-t="d">Ngày quan trọng</button><button data-t="g">Nhắc Giờ/Ngày</button><button id="nbell" style="margin-left:auto">Bật thông báo</button></div>
  <div id="ne" class="no" role="alert"></div>
  <div id="ntab1">
-  <div class="note" style="margin:0">Ghi lại giỗ, sinh nhật, kỷ niệm. Bỏ trống năm để nhắc hằng năm. Ghi chú được lưu riêng cho tài khoản (key) của bạn trên máy chủ; thông báo chỉ hiện khi bạn mở trang.</div>
+  <div class="note" style="margin:0">Ghi lại giỗ, sinh nhật, kỷ niệm. Bỏ trống năm để nhắc hằng năm. Ghi chú được lưu ngay trên máy này; thông báo chỉ hiện khi bạn mở trang.</div>
   <div class="tabs"><button id="nq1">+ Mùng 1 và Rằm hằng tháng</button><button id="nq2">+ Các ngày lễ truyền thống</button></div>
   <div class="frm">
    <label>Tên<input type="text" id="nt" maxlength="60" placeholder="Giỗ ông nội"></label>
@@ -123,7 +139,7 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
 <section class="card" id="d" aria-live="polite"></section>
 </div>
 <section class="card t" id="tuoi">
- <h2>XEM TUỔI TỪNG NGƯỜI</h2>
+ <h2>🔮 Xem tuổi</h2>
  <div class="tabs" id="ttabs"><button class="on" data-q="x">Xem tuổi</button><button data-q="g">Hồ sơ gia đình</button><button data-q="l">Quy trình lễ</button></div>
  <div id="tq1">
  <div class="note" style="margin:0">Nhập năm sinh (dương lịch) và năm muốn xem, ví dụ để làm nhà, cưới hỏi, làm ăn.</div>
@@ -157,13 +173,13 @@ input[type=text],input[type=date],input[type=time]{font:inherit;color:var(--ink)
  </div>
 </section>
 <section class="card t" id="hop">
- <h2>CHỌN NGÀY TỐT</h2>
+ <h2>🍀 Ngày tốt</h2>
  <div class="tabs" id="htabs"><button class="on" data-a="cuoi">Cưới hỏi</button><button data-a="khai">Khai trương</button><button data-a="sinh">Sinh con</button><button data-a="xuat">Xuất hành</button><button data-a="xe">Mua xe</button><button data-a="dong">Động thổ</button><button data-a="huong">Hướng hợp theo tuổi</button></div>
  <div id="hform"></div><div id="hout" aria-live="polite"></div>
 </section>
 
 <section class="card t" id="ai" hidden>
- <h2>HỎI ĐÁP PHONG THỦY (AI)</h2>
+ <h2>🤖 Hỏi AI</h2>
  <div class="note" style="margin:0">Trợ lý AI trả lời về phong thủy, ngày giờ, tuổi hợp. Nội dung chỉ mang tính tham khảo, không thay thế quyết định của bạn. Đừng nhập họ tên, địa chỉ hay thông tin nhạy cảm.</div>
  <div id="aiLog" aria-live="polite" style="margin:10px 0;display:flex;flex-direction:column;gap:8px"></div>
  <div class="frm"><label>Câu hỏi<textarea id="aiQ" rows="3" maxlength="500" placeholder="Ví dụ: Người sinh năm 1990 nên đặt bàn làm việc hướng nào?" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px"></textarea></label>
@@ -566,7 +582,7 @@ hform("cuoi");gdr();qtab("x");document.dispatchEvent(new Event("bdchg"));
 })();
 (function(){const log=$("aiLog"),q=$("aiQ"),go=$("aiGo"),H=[];let busy=0;
  const add=(c,t)=>{const d=document.createElement("div");d.textContent=t;d.style.cssText="padding:9px 12px;border-radius:10px;white-space:pre-wrap;"+(c=="u"?"background:var(--sel);align-self:flex-end;max-width:90%":"background:var(--card);border:1px solid var(--line);max-width:95%");log.appendChild(d);d.scrollIntoView({block:"nearest"});return d};
- const ER={limit:"Hôm nay bạn đã dùng hết lượt hỏi. Hãy quay lại vào ngày mai.",off:"Chức năng hỏi đáp AI chưa được bật trên máy chủ này.",auth:"Phiên đăng nhập đã hết hạn, hãy tải lại trang.",busy:"AI đang bận, vui lòng thử lại sau ít phút."};
+ const ER={limit:"Hôm nay bạn đã dùng hết lượt hỏi. Hãy quay lại vào ngày mai.",off:"Chức năng hỏi đáp AI chưa được bật trên máy chủ này.",auth:"Chưa gửi được câu hỏi, hãy tải lại trang và thử lại.",busy:"AI đang bận, vui lòng thử lại sau ít phút."};
  async function ask(){const t=q.value.trim();if(!t||busy)return;busy=1;go.disabled=true;add("u",t);q.value="";const w=add("a","Đang trả lời…");
   try{const r=await fetch("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({q:t,h:H.slice(-6)})});
    const j=await r.json().catch(()=>({}));
